@@ -33,7 +33,7 @@ interface KPIMetrics {
   percentageChange: number;
 }
 
-export default function KPIAnalysis({ branch, zone }: KPIAnalysisProps) {
+export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [kpiMetrics, setKpiMetrics] = useState<{ ga: KPIMetrics; uao: KPIMetrics; na: KPIMetrics } | null>(null);
   const [loading, setLoading] = useState(true);
