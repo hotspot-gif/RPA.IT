@@ -44,15 +44,33 @@ function ChartCard({ title, children, className = '' }: { title: string; childre
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function CTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  
+  const currencyFields = [
+    'Total Incentive', 'PO Deduction', 'Clawback', 'Renewal Impact', 
+    'Total Deductions', 'Port in Incentive', 'Gara bonus', 
+    'Total Port in bonus', 'Total Incentive Paid', 'incentive',
+    'po_deduction', 'clawback', 'renewal_impact', 'total_ded',
+    'pi_raw', 'add_gara', 'pi_total'
+  ];
+
   return (
     <div className="bg-white shadow-xl rounded-lg p-3 border border-gray-100 text-xs">
       <p className="font-semibold text-[#21264E] mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color }} className="flex items-center justify-between gap-4">
-          <span>{p.name}</span>
-          <span className="font-medium">{typeof p.value === 'number' && p.value % 1 !== 0 ? fmt(p.value) : fmtN(p.value)}</span>
-        </p>
-      ))}
+      {payload.map((p: any, i: number) => {
+        const isCurrency = currencyFields.some(f => 
+          p.name?.toLowerCase().includes(f.toLowerCase()) || 
+          p.dataKey?.toString().toLowerCase().includes(f.toLowerCase())
+        );
+        
+        return (
+          <p key={i} style={{ color: p.color }} className="flex items-center justify-between gap-4">
+            <span>{p.name}</span>
+            <span className="font-medium">
+              {isCurrency ? fmt(p.value) : fmtN(p.value)}
+            </span>
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -290,9 +308,9 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
                 { label: 'Clawback', key: 'clawback', format: fmt },
                 { label: 'Renewal Impact', key: 'renewal_impact', format: fmt },
                 { label: 'Total Deductions', key: 'total_ded', format: fmt },
-                { label: 'Port in Incentive', key: 'pi_raw', format: fmtN },
-                { label: 'Gara bonus', key: 'add_gara', format: fmtN },
-                { label: 'Total Port in bonus', key: 'pi_total', format: fmtN },
+                { label: 'Port in Incentive', key: 'pi_raw', format: fmt },
+                { label: 'Gara bonus', key: 'add_gara', format: fmt },
+                { label: 'Total Port in bonus', key: 'pi_total', format: fmt },
                 { label: 'Avg Renewal Rate', key: 'renewal_rate', format: fmtP },
               ].map(row => (
                 <tr key={row.key} className="border-b border-gray-50 hover:bg-[#fff7f2] transition">
@@ -324,9 +342,9 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             { label: 'Total Incentive', value: fmt(summary.incentive), color: '#006AE0' },
             { label: 'GA Activations', value: fmtN(summary.ga_cnt), color: '#08DC7D' },
             { label: 'Port-In Total', value: fmtN(summary.port_in), color: '#00D7FF' },
-            { label: 'Port in Incentive', value: fmtN(summary.pi_raw), color: '#FFC8B2' },
-            { label: 'Gara bonus', value: fmtN(summary.add_gara), color: '#FFD54F' },
-            { label: 'Total Port in bonus', value: fmtN(summary.pi_total), color: '#46286E' },
+            { label: 'Port in Incentive', value: fmt(summary.pi_raw), color: '#FFC8B2' },
+            { label: 'Gara bonus', value: fmt(summary.add_gara), color: '#FFD54F' },
+            { label: 'Total Port in bonus', value: fmt(summary.pi_total), color: '#46286E' },
           ].map((kpi, i) => (
             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: kpi.color }} />
