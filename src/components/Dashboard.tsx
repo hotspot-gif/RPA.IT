@@ -8,10 +8,10 @@ import DataImport from '@/components/DataImport';
 import UserManagement from '@/components/UserManagement';
 import KPIAnalysis from '@/components/KPIAnalysis';
 import {
-  LayoutDashboard, Upload, LogOut, Search, User, Building2, Shield, FileDown, ChevronLeft, ChevronRight, Users, TrendingUp,
+  LayoutDashboard, Upload, LogOut, Search, User, Building2, Shield, FileDown, ChevronLeft, ChevronRight, Users, TrendingUp, Globe,
 } from 'lucide-react';
 import { generatePDF } from '@/utils/pdfExport';
-import { ALL_BRANCHES, BRANCH_TO_ZONES, normalizeBranch } from '@/data/mockData';
+import { ALL_BRANCHES, BRANCH_TO_ZONES, normalizeBranch, NORTH_REGION, SOUTH_REGION } from '@/data/mockData';
 
 const VIEWS = { DASHBOARD: 'dashboard', KPI: 'kpi', IMPORT: 'import', USERS: 'users' } as const;
 type View = (typeof VIEWS)[keyof typeof VIEWS];
@@ -37,6 +37,7 @@ export default function Dashboard() {
 
   // KPI-specific filters (independent from dashboard)
   const [kpiBranch, setKpiBranch] = useState('');
+  const [kpiRegion, setKpiRegion] = useState('ITALY');
   const [kpiZone, setKpiZone] = useState('');
   const [kpiZones, setKpiZones] = useState<string[]>([]);
   const [kpiBranches, setKpiBranches] = useState<string[]>([]);
@@ -95,19 +96,12 @@ export default function Dashboard() {
 
   // Fetch available KPI branches from kpi_data table
   useEffect(() => {
-    if (!user) {
-      console.log('No user, skipping KPI branch fetch');
-      return;
-    }
-    
-    console.log('Fetching KPI branches for user:', user.id);
+    if (!user) return;
     
     supabase
       .from('kpi_data')
       .select('branch', { count: 'exact' })
-      .then(({ data, error, count }: { data: any; error: any; count: any }) => {
-        console.log('KPI branch fetch result:', { error, dataLength: data?.length, count });
-        
+      .then(({ data, error }: { data: any; error: any }) => {
         if (error) {
           console.error('ERROR fetching KPI branches:', error.message, error);
           return;
@@ -117,29 +111,46 @@ export default function Dashboard() {
           // Get unique branches from kpi_data
           const uniqueKpiBranches = [...new Set(data.map((r: any) => r.branch))];
           
-          // Filter based on user role
+          // Filter based on user role and region
           let availableKpiBranches: string[] = [];
           if (user.role === 'HS-ADMIN') {
-            availableKpiBranches = uniqueKpiBranches as string[];
+            availableKpiBranches = (uniqueKpiBranches as string[]);
           } else {
             const userBranches = (user.branches || []).map(normalizeBranch);
             availableKpiBranches = (uniqueKpiBranches as string[])
               .filter((b: string) => userBranches.includes(normalizeBranch(b)));
           }
+
+          // If kpiRegion is selected, filter the branch list further
+          if (kpiRegion === 'NORTH') {
+            availableKpiBranches = availableKpiBranches.filter(b => NORTH_REGION.includes(normalizeBranch(b)));
+          } else if (kpiRegion === 'SOUTH') {
+            availableKpiBranches = availableKpiBranches.filter(b => SOUTH_REGION.includes(normalizeBranch(b)));
+          }
           
-          console.log('Available KPI branches for role:', user.role, availableKpiBranches);
           setKpiBranches(availableKpiBranches);
           
-          // If user is not admin and has only 1 branch, auto-select it
-          if (user.role !== 'HS-ADMIN' && availableKpiBranches.length > 0) {
-            setKpiBranch(availableKpiBranches[0]);
+          // If the current kpiBranch is not in the filtered list, reset it
+          if (kpiBranch && !availableKpiBranches.includes(kpiBranch)) {
+            setKpiBranch('');
           }
-        } else {
-          setKpiBranches([]);
+          
+          // Default region logic for ASM/RSM - open with region results
+          if (user.role !== 'HS-ADMIN') {
+             const userBranch = user.branches?.[0] ? normalizeBranch(user.branches[0]) : '';
+             let newRegion = 'ITALY';
+             if (NORTH_REGION.includes(userBranch)) newRegion = 'NORTH';
+             else if (SOUTH_REGION.includes(userBranch)) newRegion = 'SOUTH';
+             
+             if (newRegion !== kpiRegion) {
+               setKpiRegion(newRegion);
+               setKpiBranch(''); // Show all branches in that region by default
+             }
+          }
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, kpiRegion]);
 
   // Update zones when branch changes (and keep no-zone selected on login to show branch-level performance)
   useEffect(() => {
@@ -410,18 +421,41 @@ export default function Dashboard() {
 
             {/* KPI - Branch selector (independent, from kpi_data table) */}
             {view === VIEWS.KPI && (
-              <div className="flex flex-1 min-w-[180px] max-w-[220px] items-center gap-2">
-                <Shield size={16} className="text-[#21264E]" />
-                <select
-                  value={kpiBranch}
-                  onChange={e => setKpiBranch(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                >
-                  {user?.role === 'HS-ADMIN' && <option value="">All Branches</option>}
-                  {kpiBranches.map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-4">
+                {/* Region filter */}
+                <div className="flex items-center gap-2 min-w-[140px]">
+                  <Globe size={16} className="text-[#21264E]" />
+                  <select
+                    value={kpiRegion}
+                    onChange={e => setKpiRegion(e.target.value)}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                  >
+                    {user?.role === 'HS-ADMIN' ? (
+                      <>
+                        <option value="ITALY">ITALY (All)</option>
+                        <option value="NORTH">NORTH</option>
+                        <option value="SOUTH">SOUTH</option>
+                      </>
+                    ) : (
+                      <option value={kpiRegion}>{kpiRegion}</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Branch selector */}
+                <div className="flex items-center gap-2 min-w-[180px] max-w-[220px]">
+                  <Shield size={16} className="text-[#21264E]" />
+                  <select
+                    value={kpiBranch}
+                    onChange={e => setKpiBranch(e.target.value)}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                  >
+                    <option value="">{kpiRegion === 'ITALY' ? 'All Branches' : `All ${kpiRegion} Branches`}</option>
+                    {kpiBranches.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -538,7 +572,7 @@ export default function Dashboard() {
           ) : view === VIEWS.IMPORT && user?.role === 'HS-ADMIN' ? (
             <DataImport user={user} />
           ) : view === VIEWS.KPI ? (
-            <KPIAnalysis user={user} branch={kpiBranch} zone={kpiZone} />
+            <KPIAnalysis user={user} branch={kpiBranch} zone={kpiZone} region={kpiRegion} />
           ) : !selectedRetailerId ? (
             <TopRetailersView 
               retailers={retailers}

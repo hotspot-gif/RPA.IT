@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { KPIData, RpaUser } from '@/types';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Globe } from 'lucide-react';
+import { NORTH_REGION, SOUTH_REGION, normalizeBranch } from '@/data/mockData';
 
 interface KPIAnalysisProps {
   user?: RpaUser;
   branch: string;
   zone: string;
+  region?: string;
 }
 
 interface ChartData {
@@ -41,7 +43,7 @@ export default function KPIAnalysis({ branch, zone }: KPIAnalysisProps) {
 
   useEffect(() => {
     fetchKPIData();
-  }, [branch, zone, selectedYear]);
+  }, [branch, zone, region, selectedYear]);
 
   const fetchKPIData = async () => {
     setLoading(true);
@@ -49,8 +51,9 @@ export default function KPIAnalysis({ branch, zone }: KPIAnalysisProps) {
       // Normalize inputs (branch and zone are optional filters)
       const normalizedBranch = branch?.trim() || '';
       const normalizedZone = zone?.trim() || '';
+      const currentRegion = region || 'ITALY';
 
-      console.log('Fetching KPI data for:', { normalizedBranch, normalizedZone, selectedYear });
+      console.log('Fetching KPI data for:', { normalizedBranch, normalizedZone, currentRegion, selectedYear });
 
       // Fetch all KPI data from the table
       const { data, error } = await supabase
@@ -68,38 +71,36 @@ export default function KPIAnalysis({ branch, zone }: KPIAnalysisProps) {
 
       let kpiRecords = (data as KPIData[]) || [];
       
-      console.log('Total KPI records in table:', kpiRecords.length);
-      if (kpiRecords.length > 0) {
-        console.log('Sample records:', kpiRecords.slice(0, 3));
-        // Show all unique branches in database
-        const allBranches = [...new Set(kpiRecords.map(r => r.branch))];
-        console.log('Available branches in kpi_data:', allBranches);
-      } else {
-        console.warn('ERROR: kpi_data table is empty!');
-      }
-
-      // Filter records based on selected branch/zone (if provided)
+      // Filter records based on selected region/branch/zone (if provided)
       // Always exclude 'shop closed' zones
       kpiRecords = kpiRecords.filter(record => {
         const isInactiveZone = record.zone?.toLowerCase().includes('shop closed');
+        if (isInactiveZone) return false;
+
+        // 1. Region Filter
+        if (currentRegion !== 'ITALY') {
+          const regionBranches = currentRegion === 'NORTH' ? NORTH_REGION : SOUTH_REGION;
+          const recordBranch = normalizeBranch(record.branch || '');
+          if (!regionBranches.includes(recordBranch)) return false;
+        }
         
-        // If branch is selected, filter by it
+        // 2. Branch Filter
         if (normalizedBranch) {
           const branchMatch = record.branch?.toLowerCase().trim() === normalizedBranch.toLowerCase().trim();
           if (!branchMatch) return false;
           
-          // If zone is also selected, filter by it too
+          // 3. Zone Filter
           if (normalizedZone) {
             const zoneMatch = record.zone?.toLowerCase().trim() === normalizedZone.toLowerCase().trim();
             if (!zoneMatch) return false;
           }
         }
         
-        // Exclude shop closed zones
-        return !isInactiveZone;
+        return true;
       });
 
       console.log('Filtered KPI records:', { 
+        region: currentRegion,
         branch: normalizedBranch || 'All', 
         zone: normalizedZone || 'All', 
         recordsCount: kpiRecords.length,
