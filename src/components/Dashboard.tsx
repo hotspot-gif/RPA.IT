@@ -305,10 +305,10 @@ export default function Dashboard() {
     'Area Manager';
 
   const roleBadgeColor = 
-    user?.role === 'HS-ADMIN' ? 'bg-[#46286E]' : 
-    user?.role === 'COUNTRY-MANAGER' ? 'bg-[#21264E]' :
-    user?.role === 'RSM' ? 'bg-[#006AE0]' : 
-    'bg-[#08DC7D]';
+     user?.role === 'HS-ADMIN' ? 'bg-[#46286E]' : 
+     user?.role === 'COUNTRY-MANAGER' ? 'bg-[#FFC8B2] text-[#21264E]' :
+     user?.role === 'RSM' ? 'bg-[#006AE0]' : 
+     'bg-[#08DC7D]';
 
   return (
     <div className="flex h-screen bg-[#fff7f2] overflow-hidden">
