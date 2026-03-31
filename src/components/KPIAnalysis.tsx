@@ -412,10 +412,13 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#fff7f2', 
-                  border: '1px solid #e5e7eb', 
-                  borderRadius: '6px' 
+                  backgroundColor: '#21264E', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                 }}
+                itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
+                labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
                 formatter={(value, name) => {
                   const nameMap: { [key: string]: string } = {
                     ga: 'Actual',
@@ -463,10 +466,13 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff7f2', 
-                    border: '1px solid #e5e7eb', 
-                    borderRadius: '6px' 
+                    backgroundColor: '#21264E', 
+                    border: 'none', 
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
                   formatter={(value, name) => {
                     const nameMap: { [key: string]: string } = {
                       uao: 'Actual',
@@ -516,10 +522,13 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff7f2', 
-                    border: '1px solid #e5e7eb', 
-                    borderRadius: '6px' 
+                    backgroundColor: '#21264E', 
+                    border: 'none', 
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                   }}
+                  itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
                   formatter={(value, name) => {
                     const nameMap: { [key: string]: string } = {
                       na: 'Actual',
