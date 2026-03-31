@@ -64,10 +64,14 @@ export default function Dashboard() {
           if (user.role === 'HS-ADMIN') {
             // Admin can see all standard branches.
             availableBranches = ALL_BRANCHES;
-          } else if (user.role === 'RSM' || user.role === 'ASM') {
-            // RSM and ASM see assigned branches even if some are empty today
+          } else if (user.role === 'RSM') {
+            // RSM sees up to 4 assigned branches
             const userBranches = (user.branches || []).map(normalizeBranch);
-            availableBranches = userBranches.filter((b: string) => ALL_BRANCHES.includes(b));
+            availableBranches = userBranches.filter((b: string) => ALL_BRANCHES.includes(b)).slice(0, 4);
+          } else if (user.role === 'ASM') {
+            // ASM sees only 1 assigned branch
+            const userBranches = (user.branches || []).map(normalizeBranch);
+            availableBranches = userBranches.filter((b: string) => ALL_BRANCHES.includes(b)).slice(0, 1);
           } else {
             // Other roles only see assigned branches that are present in retailer data
             const userBranches = (user.branches || []).map(normalizeBranch);
@@ -106,20 +110,31 @@ export default function Dashboard() {
         
         if (error) {
           console.error('ERROR fetching KPI branches:', error.message, error);
-          console.error('Full error object:', JSON.stringify(error));
           return;
         }
         
         if (data && data.length > 0) {
           // Get unique branches from kpi_data
           const uniqueKpiBranches = [...new Set(data.map((r: any) => r.branch))];
-          console.log('Unique KPI branches found:', uniqueKpiBranches);
-          setKpiBranches(uniqueKpiBranches);
           
-          // Initialize kpiBranch to empty (shows all branches by default)
-          // User can select a specific branch or leave empty for all
+          // Filter based on user role
+          let availableKpiBranches: string[] = [];
+          if (user.role === 'HS-ADMIN') {
+            availableKpiBranches = uniqueKpiBranches as string[];
+          } else {
+            const userBranches = (user.branches || []).map(normalizeBranch);
+            availableKpiBranches = (uniqueKpiBranches as string[])
+              .filter((b: string) => userBranches.includes(normalizeBranch(b)));
+          }
+          
+          console.log('Available KPI branches for role:', user.role, availableKpiBranches);
+          setKpiBranches(availableKpiBranches);
+          
+          // If user is not admin and has only 1 branch, auto-select it
+          if (user.role !== 'HS-ADMIN' && availableKpiBranches.length > 0) {
+            setKpiBranch(availableKpiBranches[0]);
+          }
         } else {
-          console.warn('No KPI branches found in kpi_data table, data:', data, 'count:', count);
           setKpiBranches([]);
         }
       });
@@ -402,7 +417,7 @@ export default function Dashboard() {
                   onChange={e => setKpiBranch(e.target.value)}
                   className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
                 >
-                  <option value="">All Branches</option>
+                  {user?.role === 'HS-ADMIN' && <option value="">All Branches</option>}
                   {kpiBranches.map(b => (
                     <option key={b} value={b}>{b}</option>
                   ))}
