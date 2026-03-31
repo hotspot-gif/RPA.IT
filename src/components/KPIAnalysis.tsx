@@ -426,7 +426,7 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                   return [Math.round(value as number * 100) / 100, nameMap[name] || name];
                 }}
               />
-              <Legend />
+              <Legend formatter={(value) => <span className="font-bold text-[#21264E]">{value}</span>} />
               <Bar dataKey="ga" fill="#21264E" name="Actual" stackId="a" radius={[4, 4, 0, 0]} />
               <Bar dataKey="ga_shortfall" fill="#F04438" name="Shortfall" stackId="a" radius={[0, 0, 0, 0]} />
               <Bar dataKey="ga_over_achievement" fill="#08DC7D" name="Over-Achievement" stackId="a" radius={[0, 0, 0, 0]} />
@@ -475,7 +475,7 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                     return [Math.round(value as number * 100) / 100, nameMap[name] || name];
                   }}
                 />
-                <Legend />
+                <Legend formatter={(value) => <span className="font-bold text-[#21264E]">{value}</span>} />
                 <Line 
                   type="linear"
                   dataKey="uao" 
@@ -530,7 +530,7 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                     return [Math.round(value as number * 100) / 100, nameMap[name] || name];
                   }}
                 />
-                <Legend />
+                <Legend formatter={(value) => <span className="font-bold text-[#21264E]">{value}</span>} />
                 <Bar dataKey="na" fill="#46286E" name="Actual" stackId="a" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="na_shortfall" fill="#F04438" name="Shortfall" stackId="a" radius={[0, 0, 0, 0]} legendType="none" />
                 <Bar dataKey="na_over_achievement" fill="#08DC7D" name="Over-Achievement" stackId="a" radius={[0, 0, 0, 0]} legendType="none" />
