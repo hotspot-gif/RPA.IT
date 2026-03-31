@@ -531,10 +531,6 @@ export default function Dashboard() {
             {/* Selected retailer info - only show for DASHBOARD */}
             {view === VIEWS.DASHBOARD && selectedSummary && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="bg-[#21264E] text-white px-3 py-1 rounded-full text-xs font-medium" title={selectedSummary.retailer_id}>
-                  {selectedSummary.retailer_id}
-                </span>
-                <span className="text-gray-500">{selectedSummary.zone}</span>
                 <span className={`text-[10px] font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded ${selectedSummary.zone.toLowerCase().includes('shop closed') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                   {selectedSummary.zone.toLowerCase().includes('shop closed') ? 'Inactive' : 'Active'}
                 </span>
