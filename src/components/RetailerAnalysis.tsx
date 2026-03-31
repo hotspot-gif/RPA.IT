@@ -29,9 +29,9 @@ const fmtShort = (v: number) => {
 const fmtN = (v: number) => v.toLocaleString('en-IE');
 const fmtP = (v: number) => `${v.toFixed(1)}%`;
 
-function ChartCard({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+function ChartCard({ title, children, className = '', id }: { title: string; children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 ${className}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 ${className}`} id={id}>
       <h3 className="text-sm font-semibold text-[#21264E] mb-4 flex items-center gap-2">
         <BarChart3 size={16} className="text-[#245bc1]" />
         {title}
@@ -359,7 +359,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </div>
 
       {/* 4. ANNUAL INCENTIVE YoY */}
-      <ChartCard title="Annual Incentive - YoY">
+      <ChartCard title="Annual Incentive - YoY" id="cYB">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={yearlyTotals}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -376,7 +376,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 5. MONTHLY INCENTIVE - CALENDAR OVERLAY */}
-      <ChartCard title="Monthly Incentive - Calendar Overlay">
+      <ChartCard title="Monthly Incentive - Calendar Overlay" id="cMO">
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={calendarOverlay}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -393,7 +393,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 6. FULL MONTHLY INCENTIVE TIMELINE */}
-      <ChartCard title="Full Monthly Incentive Timeline">
+      <ChartCard title="Full Monthly Incentive Timeline" id="cMF">
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={timeline}>
             <defs>
@@ -429,7 +429,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 8. P-IN ≤€6.99 vs P-IN >€6.99 */}
-      <ChartCard title="P-IN ≤€6.99 vs P-IN >€6.99">
+      <ChartCard title="P-IN ≤€6.99 vs P-IN >€6.99" id="cPI">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={piComparison}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -444,7 +444,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 9. NEW ≤€6.99 vs NEW >€6.99 */}
-      <ChartCard title="NEW ≤€6.99 vs NEW >€6.99">
+      <ChartCard title="NEW ≤€6.99 vs NEW >€6.99" id="cNP">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={newComparison}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -459,7 +459,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 10. PLAN MIX BY YEAR */}
-      <ChartCard title="Plan Mix by Year">
+      <ChartCard title="Plan Mix by Year" id="cPY">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {planMixByYear.map(pm => (
             <div key={pm.year} className="text-center">
@@ -494,7 +494,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 11. GA ACTIVATIONS - CALENDAR OVERLAY */}
-      <ChartCard title="GA Activations - Calendar Overlay">
+      <ChartCard title="GA Activations - Calendar Overlay" id="cGA">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
           {yearlyTotals.map(yt => (
             <div key={yt.year} className="flex items-center gap-3 bg-[#fff7f2] rounded-lg p-3">
@@ -546,7 +546,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 12. PORT IN INCENTIVE + GARA BONUS MONTHLY */}
-      <ChartCard title="Port in Incentive + Gara Bonus Monthly">
+      <ChartCard title="Port in Incentive + Gara Bonus Monthly" id="cPII">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={portInGaraMonthly}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -560,8 +560,23 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
         </ResponsiveContainer>
       </ChartCard>
 
+      {/* 12b. PORT-IN VS PORT-OUT MONTHLY */}
+      <ChartCard title="Port-In vs Port-Out Monthly" id="cPF">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={timeline}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="label" tick={{ fill: '#21264E', fontSize: 10 }} interval="preserveStartEnd" />
+            <YAxis tick={{ fill: '#21264E', fontSize: 11 }} />
+            <Tooltip content={<CTooltip />} />
+            <Legend />
+            <Line type="monotone" dataKey="port_in" name="Port-In" stroke="#08DC7D" strokeWidth={2.5} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="port_out" name="Port-Out" stroke="#F04438" strokeWidth={2.5} dot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
       {/* 13. TOTAL PORT-IN BONUS VS TOTAL INCENTIVE PAID - ANNUAL */}
-      <ChartCard title="Total Port-In Bonus vs Total Incentive Paid - Annual">
+      <ChartCard title="Total Port-In Bonus vs Total Incentive Paid - Annual" id="cPD">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={piVsDedAnnual}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -597,7 +612,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </div>
 
       {/* 15. DEDUCTIONS MONTHLY */}
-      <ChartCard title="Deductions Monthly">
+      <ChartCard title="Deductions Monthly" id="cDM">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={deductionsMonthly}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -613,7 +628,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 16. DEDUCTIONS BY YEAR */}
-      <ChartCard title="Deductions by Year">
+      <ChartCard title="Deductions by Year" id="cDY">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={deductionsByYear}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -629,7 +644,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 17. RENEWAL RATE MONTHLY */}
-      <ChartCard title="Renewal Rate Monthly">
+      <ChartCard title="Renewal Rate Monthly" id="cRN">
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={renewalMonthly}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
