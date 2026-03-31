@@ -31,12 +31,14 @@ const fmtP = (v: number) => `${v.toFixed(1)}%`;
 
 function ChartCard({ title, children, className = '', id }: { title: string; children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 ${className}`} id={id}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 ${className}`}>
       <h3 className="text-sm font-semibold text-[#21264E] mb-4 flex items-center gap-2">
         <BarChart3 size={16} className="text-[#245bc1]" />
         {title}
       </h3>
-      {children}
+      <div id={id} className="h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }
@@ -366,7 +368,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <XAxis dataKey="year" tick={{ fill: '#21264E', fontSize: 12 }} />
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
-            <Bar dataKey="incentive" name="Total Incentive" radius={[6, 6, 0, 0]}>
+            <Bar dataKey="incentive" name="Total Incentive" radius={[6, 6, 0, 0]} isAnimationActive={false}>
               {yearlyTotals.map(yt => (
                 <Cell key={yt.year} fill={YEAR_COLORS[yt.year] || '#006AE0'} />
               ))}
@@ -386,7 +388,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <Legend />
             {years.map(yr => (
               <Line key={yr} type="monotone" dataKey={`incentive_${yr}`} name={yr}
-                stroke={YEAR_COLORS[yr] || '#006AE0'} strokeWidth={2.5} dot={{ r: 4 }} />
+                stroke={YEAR_COLORS[yr] || '#006AE0'} strokeWidth={2.5} dot={{ r: 4 }} isAnimationActive={false} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -406,7 +408,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <XAxis dataKey="label" tick={{ fill: '#21264E', fontSize: 10 }} interval="preserveStartEnd" />
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
-            <Area type="monotone" dataKey="incentive" name="Incentive" stroke="#006AE0" fill="url(#incentiveGrad)" strokeWidth={2} />
+            <Area type="monotone" dataKey="incentive" name="Incentive" stroke="#006AE0" fill="url(#incentiveGrad)" strokeWidth={2} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -420,10 +422,10 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="pi_l6" name="P-IN ≤€6.99" stackId="a" fill={PLAN_COLORS.pi_l6} />
-            <Bar dataKey="pi_g6" name="P-IN >€6.99" stackId="a" fill={PLAN_COLORS.pi_g6} />
-            <Bar dataKey="np_l6" name="NEW ≤€6.99" stackId="a" fill={PLAN_COLORS.np_l6} />
-            <Bar dataKey="np_g6" name="NEW >€6.99" stackId="a" fill={PLAN_COLORS.np_g6} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pi_l6" name="P-IN ≤€6.99" stackId="a" fill={PLAN_COLORS.pi_l6} isAnimationActive={false} />
+            <Bar dataKey="pi_g6" name="P-IN >€6.99" stackId="a" fill={PLAN_COLORS.pi_g6} isAnimationActive={false} />
+            <Bar dataKey="np_l6" name="NEW ≤€6.99" stackId="a" fill={PLAN_COLORS.np_l6} isAnimationActive={false} />
+            <Bar dataKey="np_g6" name="NEW >€6.99" stackId="a" fill={PLAN_COLORS.np_g6} radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -437,8 +439,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="pi_l6" name="P-IN ≤€6.99" fill={PLAN_COLORS.pi_l6} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="pi_g6" name="P-IN >€6.99" fill={PLAN_COLORS.pi_g6} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pi_l6" name="P-IN ≤€6.99" fill={PLAN_COLORS.pi_l6} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="pi_g6" name="P-IN >€6.99" fill={PLAN_COLORS.pi_g6} radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -452,8 +454,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="np_l6" name="NEW ≤€6.99" fill={PLAN_COLORS.np_l6} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="np_g6" name="NEW >€6.99" fill={PLAN_COLORS.np_g6} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="np_l6" name="NEW ≤€6.99" fill={PLAN_COLORS.np_l6} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="np_g6" name="NEW >€6.99" fill={PLAN_COLORS.np_g6} radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -472,6 +474,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
                     innerRadius={45} outerRadius={80}
                     paddingAngle={3}
                     dataKey="value"
+                    isAnimationActive={false}
                   >
                     {pm.data.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
@@ -521,7 +524,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
               <Line key={yr} type="monotone" dataKey={`ga_${yr}`} name={`GA ${yr}`}
                 stroke={YEAR_COLORS[yr] || '#006AE0'} strokeWidth={2.5}
                 dot={{ r: 5, strokeWidth: 2, fill: '#fff' }}
-                activeDot={{ r: 7, strokeWidth: 2 }} />
+                activeDot={{ r: 7, strokeWidth: 2 }} isAnimationActive={false} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -535,7 +538,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <XAxis dataKey="label" tick={{ fill: '#21264E', fontSize: 10 }} interval="preserveStartEnd" />
             <YAxis tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
-            <Bar dataKey="ga_cnt" name="GA Activations" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="ga_cnt" name="GA Activations" radius={[4, 4, 0, 0]} isAnimationActive={false}>
               {timeline.map((entry, i) => {
                 const yr = entry.month.substring(0, 4);
                 return <Cell key={i} fill={YEAR_COLORS[yr] || '#006AE0'} />;
@@ -554,8 +557,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="pi_raw" name="Port in Incentive" stackId="a" fill="#FFC8B2" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="add_gara" name="Gara bonus" stackId="a" fill="#FFD54F" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pi_raw" name="Port in Incentive" stackId="a" fill="#FFC8B2" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="add_gara" name="Gara bonus" stackId="a" fill="#FFD54F" radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -569,8 +572,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Line type="monotone" dataKey="port_in" name="Port-In" stroke="#08DC7D" strokeWidth={2.5} dot={{ r: 4 }} />
-            <Line type="monotone" dataKey="port_out" name="Port-Out" stroke="#F04438" strokeWidth={2.5} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="port_in" name="Port-In" stroke="#08DC7D" strokeWidth={2.5} dot={{ r: 4 }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="port_out" name="Port-Out" stroke="#F04438" strokeWidth={2.5} dot={{ r: 4 }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -584,8 +587,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="pi_total" name="Total Port-In Bonus" fill="#006AE0" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="incentive" name="Total Incentive Paid" fill="#08DC7D" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pi_total" name="Total Port-In Bonus" fill="#006AE0" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="incentive" name="Total Incentive Paid" fill="#08DC7D" radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -620,9 +623,9 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} domain={[0, 'auto']} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="po_deduction" name="PO Deduction" stackId="ded" fill="#F04438" />
-            <Bar dataKey="clawback" name="Clawback" stackId="ded" fill="#D32F2F" />
-            <Bar dataKey="renewal_impact" name="Renewal Impact" stackId="ded" fill="#B71C1C" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="po_deduction" name="PO Deduction" stackId="ded" fill="#F04438" isAnimationActive={false} />
+            <Bar dataKey="clawback" name="Clawback" stackId="ded" fill="#D32F2F" isAnimationActive={false} />
+            <Bar dataKey="renewal_impact" name="Renewal Impact" stackId="ded" fill="#B71C1C" radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -636,9 +639,9 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} domain={[0, 'auto']} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="po_deduction" name="PO Deduction" fill="#F04438" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="clawback" name="Clawback" fill="#D32F2F" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="renewal_impact" name="Renewal Impact" fill="#B71C1C" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="po_deduction" name="PO Deduction" fill="#F04438" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="clawback" name="Clawback" fill="#D32F2F" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            <Bar dataKey="renewal_impact" name="Renewal Impact" fill="#B71C1C" radius={[4, 4, 0, 0]} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -652,6 +655,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={(v: number) => `${v}%`} domain={[0, 100]} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Line type="monotone" dataKey="renewal_rate" name="Renewal Rate %" stroke="#46286E" strokeWidth={2.5}
+              isAnimationActive={false}
               dot={/* eslint-disable @typescript-eslint/no-explicit-any */
                 ((props: any) => {
                   const { cx, cy, payload } = props;
