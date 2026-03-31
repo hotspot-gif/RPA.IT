@@ -18,7 +18,7 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 async function drawLogoW(pdf: jsPDF, x: number, y: number, h: number): Promise<number> {
   return new Promise((res) => {
-    const timeout = setTimeout(() => res(0), 2000);
+    const timeout = setTimeout(() => res(0), 1500);
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -31,7 +31,7 @@ async function drawLogoW(pdf: jsPDF, x: number, y: number, h: number): Promise<n
         const ctx = cv.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0);
-          pdf.addImage(cv.toDataURL('image/png'), 'PNG', x, y, ar * h, h);
+          pdf.addImage(cv.toDataURL('image/png'), 'PNG', x, y, ar * h, h, undefined, 'FAST');
         }
       } catch (e) { console.warn('Logo fail', e); }
       res(ar * h);
@@ -43,7 +43,7 @@ async function drawLogoW(pdf: jsPDF, x: number, y: number, h: number): Promise<n
 
 function addFooter(pdf: jsPDF, n: number, W: number, H: number, M: number, branch: string, userName: string) {
   pdf.setDrawColor(200, 200, 210);
-  pdf.setLineWidth(0.25);
+  pdf.setLineWidth(0.2);
   pdf.line(M, H - 9, W - M, H - 9);
   pdf.setFontSize(6);
   pdf.setFont('helvetica', 'italic');
@@ -97,7 +97,7 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
   const el = document.getElementById(cid);
   pdf.setFillColor(250, 248, 245);
   pdf.setDrawColor(220, 215, 210);
-  pdf.setLineWidth(0.25);
+  pdf.setLineWidth(0.2);
   pdf.roundedRect(x, yp, cw, ch + 7, 2, 2, 'FD');
   pdf.setTextColor(100, 100, 120);
   pdf.setFontSize(6);
@@ -112,15 +112,19 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
   }
 
   try {
+    // Add small delay to prevent CPU choking
+    await delay(150);
     const canvas = await html2canvas(el, { 
-      scale: 1, 
+      scale: 0.85, // Even lower scale for speed
       useCORS: true, 
       backgroundColor: '#ffffff', 
       logging: false,
-      imageTimeout: 3000
+      imageTimeout: 2000
     });
-    const url = canvas.toDataURL('image/jpeg', 0.8);
-    pdf.addImage(url, 'JPEG', x + 1, yp + 6, cw - 2, ch);
+    const url = canvas.toDataURL('image/jpeg', 0.65); // Low quality for speed
+    pdf.addImage(url, 'JPEG', x + 1, yp + 6, cw - 2, ch, undefined, 'FAST');
+    // Release memory
+    canvas.width = 0; canvas.height = 0;
   } catch (e) {
     pdf.setFontSize(5);
     pdf.setTextColor(180, 180, 180);
@@ -130,7 +134,7 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
 
 export async function generatePDF(summary: RetailerSummary, monthly: RetailerMonthly[], user: any, setProgress?: (p: number) => void) {
   try {
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdf = new jsPDF('p', 'mm', 'a4', true); // compress PDF
     const W = 210, H = 297, M = 10, IW = 190;
     const ID = summary.retailer_id;
     const BRANCH = summary.branch;
@@ -167,7 +171,7 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     const cw3 = IW / 3;
     ['2024', '2025', '2026'].forEach((y2, i) => {
       const d = yd(y2); const cx = M + i * cw3; const rgb = hR(y2 === '2024' ? '#006AE0' : y2 === '2025' ? '#08DC7D' : '#FFD54F');
-      sF(255, 255, 255); pdf.setDrawColor(rgb[0], rgb[1], rgb[2]); pdf.setLineWidth(0.6); pdf.roundedRect(cx, y, cw3 - 2, 40, 2, 2, 'FD');
+      sF(255, 255, 255); pdf.setDrawColor(rgb[0], rgb[1], rgb[2]); pdf.setLineWidth(0.4); pdf.roundedRect(cx, y, cw3 - 2, 40, 2, 2, 'FD');
       sF(rgb[0], rgb[1], rgb[2]); pdf.roundedRect(cx + 2, y + 2, 26, 7, 1.5, 1.5, 'F');
       pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(y2 === '2026' ? 33 : 255, y2 === '2026' ? 38 : 255, y2 === '2026' ? 78 : 255);
       pdf.text(y2 + (y2 === '2026' ? ' YTD' : ''), cx + 15, y + 6.8, { align: 'center' });
