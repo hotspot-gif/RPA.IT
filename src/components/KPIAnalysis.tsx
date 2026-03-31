@@ -625,8 +625,8 @@ function KPICard({
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div
               className={`h-full ${
-                achievedPercentage >= 100 ? 'bg-green-500' :
-                achievedPercentage >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                achievedPercentage >= 75 ? 'bg-[#08DC7D]' :
+                achievedPercentage >= 50 ? 'bg-[#FFD54F]' : 'bg-[#F04438]'
               }`}
               style={{ width: `${Math.min(achievedPercentage, 100)}%` }}
             />
@@ -703,8 +703,8 @@ function AnalysisCard({
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
               className={`h-full rounded-full ${
-                achievedPercentage >= 100 ? 'bg-green-500' :
-                achievedPercentage >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                achievedPercentage >= 75 ? 'bg-[#08DC7D]' :
+                achievedPercentage >= 50 ? 'bg-[#FFD54F]' : 'bg-[#F04438]'
               }`}
               style={{ width: `${Math.min(achievedPercentage, 100)}%` }}
             />
