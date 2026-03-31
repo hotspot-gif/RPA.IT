@@ -194,10 +194,13 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
           ga_target: item.ga_target,
           ga_shortfall: gaShortfall,
           ga_over_achievement: gaOverAchievement,
+          ga_completion: item.ga_target > 0 ? (item.ga / item.ga_target) * 100 : 0,
           uao: item.uao,
           uao_target: item.uao_target,
+          uao_completion: item.uao_target > 0 ? (item.uao / item.uao_target) * 100 : 0,
           na: item.na,
           na_target: item.na_target,
+          na_completion: item.na_target > 0 ? (item.na / item.na_target) * 100 : 0,
         };
       });
 
@@ -391,6 +394,78 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
           />
         </div>
       )}
+
+      {/* Target Completion MoM Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <ChartCard title="GA Completion Rate MoM" showTargets={false}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} domain={[0, 120]} />
+              <Tooltip 
+                 contentStyle={{ backgroundColor: '#21264E', border: 'none', borderRadius: '8px' }}
+                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 formatter={(val: number) => [`${val.toFixed(1)}%`, 'Completion']}
+               />
+               <Legend formatter={(value) => <span className="font-bold text-[#21264E] text-[10px]">{value}</span>} />
+               <Bar 
+                 dataKey="ga_completion" 
+                 fill="#21264E" 
+                 radius={[4, 4, 0, 0]}
+                 name="GA Completion %"
+               />
+             </BarChart>
+           </ResponsiveContainer>
+         </ChartCard>
+ 
+         <ChartCard title="UAO Completion Rate MoM" showTargets={false}>
+           <ResponsiveContainer width="100%" height={200}>
+             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+               <YAxis tick={{ fontSize: 10 }} domain={[0, 120]} />
+               <Tooltip 
+                 contentStyle={{ backgroundColor: '#21264E', border: 'none', borderRadius: '8px' }}
+                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 formatter={(val: number) => [`${val.toFixed(1)}%`, 'Completion']}
+               />
+               <Legend formatter={(value) => <span className="font-bold text-[#21264E] text-[10px]">{value}</span>} />
+               <Bar 
+                 dataKey="uao_completion" 
+                 fill="#1080FD" 
+                 radius={[4, 4, 0, 0]}
+                 name="UAO Completion %"
+               />
+             </BarChart>
+           </ResponsiveContainer>
+         </ChartCard>
+ 
+         <ChartCard title="NA Completion Rate MoM" showTargets={false}>
+           <ResponsiveContainer width="100%" height={200}>
+             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+               <YAxis tick={{ fontSize: 10 }} domain={[0, 120]} />
+               <Tooltip 
+                 contentStyle={{ backgroundColor: '#21264E', border: 'none', borderRadius: '8px' }}
+                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '11px' }}
+                 formatter={(val: number) => [`${val.toFixed(1)}%`, 'Completion']}
+               />
+               <Legend formatter={(value) => <span className="font-bold text-[#21264E] text-[10px]">{value}</span>} />
+               <Bar 
+                 dataKey="na_completion" 
+                 fill="#46286E" 
+                 radius={[4, 4, 0, 0]}
+                 name="NA Completion %"
+               />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
 
       {/* Charts Section */}
       <div className="space-y-4 md:space-y-6">
