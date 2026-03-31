@@ -205,8 +205,9 @@ export default function UserManagement() {
 
       setShowModal(false);
       fetchUsers();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      const msg = err?.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
       setError(msg || 'An error occurred');
     }
 
@@ -228,8 +229,9 @@ export default function UserManagement() {
       setDeleteConfirm(null);
       setSuccess('User deleted successfully');
       fetchUsers();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      const msg = err?.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
       setError(msg || 'Failed to delete user');
     }
     setDeleting(false);
@@ -244,6 +246,10 @@ export default function UserManagement() {
     if (!err) {
       setSuccess(`User "${u.full_name}" ${u.is_active ? 'deactivated' : 'activated'}`);
       fetchUsers();
+    } else {
+      console.error('Toggle error:', err);
+      const msg = err?.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      setError(msg || 'Failed to update user status');
     }
   };
 

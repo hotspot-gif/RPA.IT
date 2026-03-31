@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.rpa_users (
   username text NOT NULL UNIQUE,
   full_name text NOT NULL,
   email text NOT NULL,
-  role text NOT NULL CHECK (role = ANY (ARRAY['HS-ADMIN','RSM','ASM'])),
+  role text NOT NULL CHECK (role = ANY (ARRAY['HS-ADMIN','COUNTRY-MANAGER','RSM','ASM'])),
   branches text[] NOT NULL DEFAULT '{}',
   is_active boolean NOT NULL DEFAULT true,
   created_by uuid,
