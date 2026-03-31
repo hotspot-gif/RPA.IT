@@ -532,8 +532,8 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 />
                 <Legend />
                 <Bar dataKey="na" fill="#46286E" name="Actual" stackId="a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="na_shortfall" fill="#F04438" name="Shortfall" stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="na_over_achievement" fill="#08DC7D" name="Over-Achievement" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="na_shortfall" fill="#F04438" name="Shortfall" stackId="a" radius={[0, 0, 0, 0]} legendType="none" />
+                <Bar dataKey="na_over_achievement" fill="#08DC7D" name="Over-Achievement" stackId="a" radius={[0, 0, 0, 0]} legendType="none" />
                 <Line 
                   type="linear"
                   dataKey="na_target" 
