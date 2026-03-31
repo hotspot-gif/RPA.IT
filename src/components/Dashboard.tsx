@@ -196,7 +196,7 @@ export default function Dashboard() {
 
     // First try the hardcoded mapping for known branches
     if (BRANCH_TO_ZONES[kpiBranch]) {
-      const branchZones = BRANCH_TO_ZONES[kpiBranch];
+      const branchZones = BRANCH_TO_ZONES[kpiBranch].filter(z => !z.toLowerCase().includes('shop closed'));
       setKpiZones(branchZones);
       setKpiZone('');
       return;
