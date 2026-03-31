@@ -99,3 +99,37 @@ export interface CalendarOverlayPoint {
   monthName: string;
   [year: string]: number | string;
 }
+
+export interface KPIData {
+  id: string;
+  branch: string;
+  zone: string;
+  month: string;
+  year: number;
+  ga: number; // Gross Ads
+  ga_target: number;
+  uao: number; // Unique Active Outlets
+  uao_target: number;
+  na: number; // New Outlets
+  na_target: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KPIMonthly {
+  month: string;
+  year: number;
+  ga: number;
+  ga_target: number;
+  uao: number;
+  uao_target: number;
+  na: number;
+  na_target: number;
+}
+
+export interface KPIAnalysis {
+  average: number;
+  highest: number;
+  lowest: number;
+  percentageChange: number;
+}

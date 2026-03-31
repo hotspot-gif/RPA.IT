@@ -2,14 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { RpaUser } from '@/types';
+import { normalizeBranch } from '@/data/mockData';
 import {
   UserPlus, Pencil, Trash2, X, Check, Search, Shield, Building2,
   Users, AlertTriangle, ChevronDown, Eye, EyeOff,
 } from 'lucide-react';
 
-const ALL_BRANCHES = ['Milan', 'Bologna', 'Torino', 'Padova', 'Rome', 'Napoli', 'Palermo', 'Bari'];
-const NORTH_BRANCHES = ['Milan', 'Bologna', 'Torino', 'Padova'];
-const SOUTH_BRANCHES = ['Rome', 'Napoli', 'Palermo', 'Bari'];
+const ALL_BRANCHES = [
+  'LMIT-HS-BARI',
+  'LMIT-HS-BOLOGNA',
+  'LMIT-HS-MILAN',
+  'LMIT-HS-NAPLES',
+  'LMIT-HS-PADOVA',
+  'LMIT-HS-PALERMO',
+  'LMIT-HS-ROME',
+  'LMIT-HS-TORINO',
+];
+const NORTH_BRANCHES = ['LMIT-HS-MILAN', 'LMIT-HS-BOLOGNA', 'LMIT-HS-TORINO', 'LMIT-HS-PADOVA'];
+const SOUTH_BRANCHES = ['LMIT-HS-ROME', 'LMIT-HS-NAPLES', 'LMIT-HS-PALERMO', 'LMIT-HS-BARI'];
 
 const ROLES: { value: RpaUser['role']; label: string; color: string }[] = [
   { value: 'HS-ADMIN', label: 'HS Admin', color: 'bg-[#46286E]' },
@@ -88,7 +98,7 @@ export default function UserManagement() {
       email: u.email,
       username: u.username,
       role: u.role,
-      branches: [...u.branches],
+      branches: u.branches.map(normalizeBranch),
       is_active: u.is_active,
       password: '',
     });

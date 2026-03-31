@@ -11,6 +11,22 @@ export const ALL_BRANCHES = [
   'LMIT-HS-TORINO',
 ];
 
+// Helper to normalize branch names (maps short names to DB format)
+export const normalizeBranch = (branch: string) => {
+  const mapping: Record<string, string> = {
+    'Milan': 'LMIT-HS-MILAN',
+    'Bologna': 'LMIT-HS-BOLOGNA',
+    'Torino': 'LMIT-HS-TORINO',
+    'Padova': 'LMIT-HS-PADOVA',
+    'Rome': 'LMIT-HS-ROME',
+    'Napoli': 'LMIT-HS-NAPLES',
+    'Palermo': 'LMIT-HS-PALERMO',
+    'Bari': 'LMIT-HS-BARI',
+    'Naples': 'LMIT-HS-NAPLES',
+  };
+  return mapping[branch] || branch;
+};
+
 export const NORTH_REGION = ['LMIT-HS-MILAN', 'LMIT-HS-BOLOGNA', 'LMIT-HS-TORINO', 'LMIT-HS-PADOVA'];
 export const SOUTH_REGION = ['LMIT-HS-ROME', 'LMIT-HS-NAPLES', 'LMIT-HS-PALERMO', 'LMIT-HS-BARI'];
 

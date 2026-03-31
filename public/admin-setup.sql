@@ -34,7 +34,7 @@ INSERT INTO public.rpa_users (
   -- ⚠️ REPLACE THIS with the same email you used in Supabase Auth:
   'your-admin@email.com',
   'HS-ADMIN',
-  ARRAY['Milan','Bologna','Torino','Padova','Rome','Napoli','Palermo','Bari'],
+  ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA','LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'],
   true
 ) ON CONFLICT (username) DO UPDATE SET
   auth_user_id = EXCLUDED.auth_user_id,
@@ -50,19 +50,19 @@ INSERT INTO public.rpa_users (
 -- RSM - North Region Manager (Milan, Bologna, Torino, Padova)
 -- INSERT INTO public.rpa_users (username, full_name, email, role, branches, is_active)
 -- VALUES ('rsm_north', 'Marco Rossi', 'rsm.north@company.com', 'RSM',
---         ARRAY['Milan','Bologna','Torino','Padova'], true);
+--         ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA'], true);
 
 -- RSM - South Region Manager (Rome, Napoli, Palermo, Bari)
 -- INSERT INTO public.rpa_users (username, full_name, email, role, branches, is_active)
 -- VALUES ('rsm_south', 'Giulia Bianchi', 'rsm.south@company.com', 'RSM',
---         ARRAY['Rome','Napoli','Palermo','Bari'], true);
+--         ARRAY['LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'], true);
 
 -- ASM - Milan Area Manager
 -- INSERT INTO public.rpa_users (username, full_name, email, role, branches, is_active)
 -- VALUES ('asm_milan', 'Andrea Verdi', 'asm.milan@company.com', 'ASM',
---         ARRAY['Milan'], true);
+--         ARRAY['LMIT-HS-MILAN'], true);
 
 -- ASM - Rome Area Manager
 -- INSERT INTO public.rpa_users (username, full_name, email, role, branches, is_active)
 -- VALUES ('asm_rome', 'Sofia Romano', 'asm.rome@company.com', 'ASM',
---         ARRAY['Rome'], true);
+--         ARRAY['LMIT-HS-ROME'], true);

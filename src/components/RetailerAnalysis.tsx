@@ -131,23 +131,21 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
     };
   }), [years, sorted]);
 
-  // Port-In + GARA monthly
+  // Port-In Incentive + GARA Bonus monthly (stacked bar)
   const portInGaraMonthly = useMemo(() => sorted.map(m => {
     const [yr, mo] = m.month.split('-');
     return {
       label: `${MONTH_NAMES[parseInt(mo) - 1]} ${yr.slice(2)}`,
-      port_in: m.port_in,
+      pi_raw: m.pi_raw,
       add_gara: m.add_gara,
-      pi_total: m.pi_total,
     };
   }), [sorted]);
 
   // Port-In vs Deductions annual
   const piVsDedAnnual = useMemo(() => yearlyTotals.map(yt => ({
     year: yt.year,
-    port_in: yt.port_in,
-    total_ded: yt.total_ded,
-    net: yt.port_in - yt.total_ded,
+    pi_total: yt.pi_total,
+    incentive: yt.incentive,
     fill: YEAR_COLORS[yt.year] || '#006AE0',
   })), [yearlyTotals]);
 
@@ -245,6 +243,22 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <p className="text-xs text-gray-500 mb-1">Latest Deductions</p>
             <p className="text-xl font-bold text-[#F04438]">{fmt(latestMonth?.total_ded ?? 0)}</p>
           </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg GA per Month</p>
+            <p className="text-xl font-bold text-[#21264E]">{fmtN(yearlyTotals.length > 0 ? yearlyTotals.reduce((sum, y) => sum + y.ga_cnt, 0) / yearlyTotals.reduce((sum, y) => sum + y.monthCount, 0) : 0)}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg Port-In per Month</p>
+            <p className="text-xl font-bold text-[#21264E]">{fmtN(yearlyTotals.length > 0 ? yearlyTotals.reduce((sum, y) => sum + y.port_in, 0) / yearlyTotals.reduce((sum, y) => sum + y.monthCount, 0) : 0)}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg New Activations</p>
+            <p className="text-xl font-bold text-[#21264E]">{fmtN(yearlyTotals.length > 0 ? yearlyTotals.reduce((sum, y) => sum + (y.np_l6 + y.np_g6), 0) / yearlyTotals.reduce((sum, y) => sum + y.monthCount, 0) : 0)}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p className="text-xs text-gray-500 mb-1">Avg Incentive per Month</p>
+            <p className="text-xl font-bold text-[#21264E]">{fmt(yearlyTotals.length > 0 ? yearlyTotals.reduce((sum, y) => sum + y.incentive, 0) / yearlyTotals.reduce((sum, y) => sum + y.monthCount, 0) : 0)}</p>
+          </div>
         </div>
       </div>
 
@@ -266,19 +280,19 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
               {[
                 { label: 'Total Incentive', key: 'incentive', format: fmt },
                 { label: 'GA Activations', key: 'ga_cnt', format: fmtN },
-                { label: 'P-IN ≤€6.99', key: 'pi_l6', format: fmt },
-                { label: 'P-IN >€6.99', key: 'pi_g6', format: fmt },
-                { label: 'NEW ≤€6.99', key: 'np_l6', format: fmt },
-                { label: 'NEW >€6.99', key: 'np_g6', format: fmt },
-                { label: 'Port-In', key: 'port_in', format: fmt },
+                { label: 'P-IN ≤€6.99', key: 'pi_l6', format: fmtN },
+                { label: 'P-IN >€6.99', key: 'pi_g6', format: fmtN },
+                { label: 'NEW ≤€6.99', key: 'np_l6', format: fmtN },
+                { label: 'NEW >€6.99', key: 'np_g6', format: fmtN },
+                { label: 'Port-In', key: 'port_in', format: fmtN },
                 { label: 'Port-Out', key: 'port_out', format: fmtN },
                 { label: 'PO Deduction', key: 'po_deduction', format: fmt },
                 { label: 'Clawback', key: 'clawback', format: fmt },
                 { label: 'Renewal Impact', key: 'renewal_impact', format: fmt },
                 { label: 'Total Deductions', key: 'total_ded', format: fmt },
-                { label: 'PI Raw', key: 'pi_raw', format: fmt },
-                { label: 'Add GARA', key: 'add_gara', format: fmt },
-                { label: 'PI Total', key: 'pi_total', format: fmt },
+                { label: 'Port in Incentive', key: 'pi_raw', format: fmtN },
+                { label: 'Gara bonus', key: 'add_gara', format: fmtN },
+                { label: 'Total Port in bonus', key: 'pi_total', format: fmtN },
                 { label: 'Avg Renewal Rate', key: 'renewal_rate', format: fmtP },
               ].map(row => (
                 <tr key={row.key} className="border-b border-gray-50 hover:bg-[#fff7f2] transition">
@@ -309,10 +323,10 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
           {[
             { label: 'Total Incentive', value: fmt(summary.incentive), color: '#006AE0' },
             { label: 'GA Activations', value: fmtN(summary.ga_cnt), color: '#08DC7D' },
-            { label: 'Port-In Total', value: fmt(summary.port_in), color: '#00D7FF' },
-            { label: 'GARA Bonus', value: fmt(summary.add_gara), color: '#FFD54F' },
-            { label: 'Avg Renewal', value: fmtP(summary.renewal_rate), color: '#46286E' },
-            { label: 'Total Deductions', value: fmt(summary.total_deductions), color: DEDUCTION_RED },
+            { label: 'Port-In Total', value: fmtN(summary.port_in), color: '#00D7FF' },
+            { label: 'Port in Incentive', value: fmtN(summary.pi_raw), color: '#FFC8B2' },
+            { label: 'Gara bonus', value: fmtN(summary.add_gara), color: '#FFD54F' },
+            { label: 'Total Port in bonus', value: fmtN(summary.pi_total), color: '#46286E' },
           ].map((kpi, i) => (
             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: kpi.color }} />
@@ -445,15 +459,15 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
                   <Tooltip formatter={(v) => fmt(Number(v))} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex flex-wrap justify-center gap-2 mt-2">
-                {pm.data.map((d, i) => (
-                  <span key={i} className="flex items-center gap-1 text-[10px] text-[#21264E]">
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: d.color }} />
-                    {d.name}
-                  </span>
-                ))}
-              </div>
             </div>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
+          {planMixByYear[0]?.data.map((d, i) => (
+            <span key={i} className="flex items-center gap-2 text-xs text-[#21264E]">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
+              {d.name}
+            </span>
           ))}
         </div>
       </ChartCard>
@@ -508,23 +522,22 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 12. PORT IN INCENTIVE + GARA BONUS MONTHLY */}
-      <ChartCard title="PORT IN Incentive + GARA Bonus Monthly">
+      <ChartCard title="Port in Incentive + Gara Bonus Monthly">
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={portInGaraMonthly}>
+          <BarChart data={portInGaraMonthly}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="label" tick={{ fill: '#21264E', fontSize: 10 }} interval="preserveStartEnd" />
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="port_in" name="Port-In Incentive" fill="#006AE0" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="add_gara" name="GARA Bonus" fill="#08DC7D" radius={[4, 4, 0, 0]} />
-            <Line type="monotone" dataKey="pi_total" name="PI Total" stroke="#FFD54F" strokeWidth={2.5} dot={{ r: 3 }} />
-          </ComposedChart>
+            <Bar dataKey="pi_raw" name="Port in Incentive" stackId="a" fill="#FFC8B2" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="add_gara" name="Gara bonus" stackId="a" fill="#FFD54F" radius={[4, 4, 0, 0]} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* 13. PORT-IN INCENTIVE VS DEDUCTIONS - ANNUAL */}
-      <ChartCard title="Port-In Incentive vs Deductions - Annual">
+      {/* 13. TOTAL PORT-IN BONUS VS TOTAL INCENTIVE PAID - ANNUAL */}
+      <ChartCard title="Total Port-In Bonus vs Total Incentive Paid - Annual">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={piVsDedAnnual}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -532,8 +545,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <YAxis tickFormatter={fmtShort} tick={{ fill: '#21264E', fontSize: 11 }} />
             <Tooltip content={<CTooltip />} />
             <Legend />
-            <Bar dataKey="port_in" name="Port-In Incentive" fill="#006AE0" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="total_ded" name="Total Deductions" fill={DEDUCTION_RED} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pi_total" name="Total Port-In Bonus" fill="#006AE0" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="incentive" name="Total Incentive Paid" fill="#08DC7D" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -569,8 +582,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <Tooltip content={<CTooltip />} />
             <Legend />
             <Bar dataKey="po_deduction" name="PO Deduction" stackId="ded" fill="#F04438" />
-            <Bar dataKey="clawback" name="Clawback" stackId="ded" fill="#F04438" fillOpacity={0.7} />
-            <Bar dataKey="renewal_impact" name="Renewal Impact" stackId="ded" fill="#F04438" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="clawback" name="Clawback" stackId="ded" fill="#D32F2F" />
+            <Bar dataKey="renewal_impact" name="Renewal Impact" stackId="ded" fill="#B71C1C" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -585,8 +598,8 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             <Tooltip content={<CTooltip />} />
             <Legend />
             <Bar dataKey="po_deduction" name="PO Deduction" fill="#F04438" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="clawback" name="Clawback" fill="#F04438" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="renewal_impact" name="Renewal Impact" fill="#F04438" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="clawback" name="Clawback" fill="#D32F2F" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="renewal_impact" name="Renewal Impact" fill="#B71C1C" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>

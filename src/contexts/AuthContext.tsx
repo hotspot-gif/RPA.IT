@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (count === 0 || count === null) {
           // First user ever = make them HS-ADMIN with all branches
-          const allBranches = ['Milan', 'Bologna', 'Torino', 'Padova', 'Rome', 'Napoli', 'Palermo', 'Bari'];
+          const allBranches = ['LMIT-HS-MILAN', 'LMIT-HS-BOLOGNA', 'LMIT-HS-TORINO', 'LMIT-HS-PADOVA', 'LMIT-HS-ROME', 'LMIT-HS-NAPLES', 'LMIT-HS-PALERMO', 'LMIT-HS-BARI'];
           const { data: newUser, error: insertErr } = await supabase
             .from('rpa_users')
             .insert({

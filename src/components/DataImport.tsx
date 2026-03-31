@@ -1,13 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ImportLog } from '@/types';
+import type { ImportLog, RpaUser } from '@/types';
 import Papa from 'papaparse';
 import { Upload, FileText, CheckCircle, AlertTriangle, X, Clock, RotateCcw } from 'lucide-react';
 
-export default function DataImport() {
-  const { user } = useAuth();
+type ImportType = 'retailer' | 'kpi';
+
+interface DataImportProps {
+  user?: RpaUser;
+}
+
+export default function DataImport({ user: propUser }: DataImportProps) {
+  const { user: authUser } = useAuth();
+  const user = propUser || authUser;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [importType, setImportType] = useState<ImportType>('retailer');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Record<string, string>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -62,106 +70,12 @@ export default function DataImport() {
         });
       });
 
-      const rows = parsed.data;
-      let processed = 0;
-      let skipped = 0;
-      const newRetailers = new Set<string>();
-      const updRetailers = new Set<string>();
-      const newMonths = new Set<string>();
-      const updMonths = new Set<string>();
-
-      const batchSize = 50;
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
-
-        for (const row of batch) {
-          const retailerId = row.retailer_id?.trim();
-          const month = row.month?.trim();
-          const branch = row.branch?.trim();
-          if (!retailerId || !month || !branch) {
-            skipped++;
-            continue;
-          }
-
-          const { data: existing } = await supabase
-            .from('retailer_summary')
-            .select('retailer_id')
-            .eq('retailer_id', retailerId)
-            .maybeSingle();
-
-          const numericFields = {
-            ga_cnt: parseFloat(row.ga_cnt) || 0,
-            pi_l6: parseFloat(row.pi_l6) || 0,
-            pi_g6: parseFloat(row.pi_g6) || 0,
-            np_l6: parseFloat(row.np_l6) || 0,
-            np_g6: parseFloat(row.np_g6) || 0,
-            port_in: parseFloat(row.port_in) || 0,
-            port_out: parseFloat(row.port_out) || 0,
-            po_deduction: parseFloat(row.po_deduction) || 0,
-            clawback: parseFloat(row.clawback) || 0,
-            renewal_impact: parseFloat(row.renewal_impact) || 0,
-            total_ded: parseFloat(row.total_ded) || 0,
-            pi_raw: parseFloat(row.pi_raw) || 0,
-            add_gara: parseFloat(row.add_gara) || 0,
-            pi_total: parseFloat(row.pi_total) || 0,
-            incentive: parseFloat(row.incentive) || 0,
-            renewal_rate: parseFloat(row.renewal_rate) || 0,
-          };
-
-          if (!existing) {
-            await supabase.from('retailer_summary').insert({
-              retailer_id: retailerId,
-              branch,
-              zone: row.zone || '',
-              ...numericFields,
-              total_deductions: numericFields.total_ded,
-            });
-            newRetailers.add(retailerId);
-          } else {
-            updRetailers.add(retailerId);
-          }
-
-          const { data: existingMonth } = await supabase
-            .from('retailer_monthly')
-            .select('id')
-            .eq('retailer_id', retailerId)
-            .eq('month', month)
-            .maybeSingle();
-
-          if (existingMonth) {
-            await supabase
-              .from('retailer_monthly')
-              .update({ branch, ...numericFields })
-              .eq('id', existingMonth.id);
-            updMonths.add(month);
-          } else {
-            await supabase.from('retailer_monthly').insert({
-              retailer_id: retailerId, branch, month, ...numericFields,
-            });
-            newMonths.add(month);
-          }
-
-          processed++;
-        }
+      if (importType === 'retailer') {
+        await handleRetailerImport(parsed);
+      } else {
+        await handleKPIImport(parsed);
       }
-
-      await supabase.from('import_log').insert({
-        filename: file.name,
-        imported_by: user.id,
-        rows_processed: processed,
-        rows_skipped: skipped,
-        new_retailers: newRetailers.size,
-        upd_retailers: updRetailers.size,
-        new_months: [...newMonths],
-        upd_months: [...updMonths],
-        status: skipped > 0 ? 'partial' : 'success',
-        error_msg: skipped > 0 ? `${skipped} rows skipped (missing required fields)` : null,
-      });
-
-      setResult({
-        status: skipped > 0 ? 'partial' : 'success',
-        message: `Processed ${processed} rows. ${skipped > 0 ? `${skipped} skipped.` : ''} ${newRetailers.size} new retailers, ${updRetailers.size} updated.`,
-      });
+      
       loadImportLogs();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -177,6 +91,224 @@ export default function DataImport() {
     setImporting(false);
   };
 
+  const handleRetailerImport = async (parsed: Papa.ParseResult<Record<string, string>>) => {
+    const rows = parsed.data;
+    let processed = 0;
+    let skipped = 0;
+    const newRetailers = new Set<string>();
+    const updRetailers = new Set<string>();
+    const newMonths = new Set<string>();
+    const updMonths = new Set<string>();
+
+    const batchSize = 50;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+
+      for (const row of batch) {
+        const retailerId = row.retailer_id?.trim();
+        const month = row.month?.trim();
+        const branch = row.branch?.trim();
+        if (!retailerId || !month || !branch || branch === 'EUROPEAN AGENCY') {
+          skipped++;
+          continue;
+        }
+
+        const { data: existing } = await supabase
+          .from('retailer_summary')
+          .select('retailer_id')
+          .eq('retailer_id', retailerId)
+          .maybeSingle();
+
+        const numericFields = {
+          ga_cnt: parseFloat(row.ga_cnt) || 0,
+          pi_l6: parseFloat(row.pi_l6) || 0,
+          pi_g6: parseFloat(row.pi_g6) || 0,
+          np_l6: parseFloat(row.np_l6) || 0,
+          np_g6: parseFloat(row.np_g6) || 0,
+          port_in: parseFloat(row.port_in) || 0,
+          port_out: parseFloat(row.port_out) || 0,
+          po_deduction: parseFloat(row.po_deduction) || 0,
+          clawback: parseFloat(row.clawback) || 0,
+          renewal_impact: parseFloat(row.renewal_impact) || 0,
+          total_ded: parseFloat(row.total_ded) || 0,
+          pi_raw: parseFloat(row.pi_raw) || 0,
+          add_gara: parseFloat(row.add_gara) || 0,
+          pi_total: parseFloat(row.pi_total) || 0,
+          incentive: parseFloat(row.incentive) || 0,
+          renewal_rate: parseFloat(row.renewal_rate) || 0,
+        };
+
+        if (!existing) {
+          await supabase.from('retailer_summary').insert({
+            retailer_id: retailerId,
+            branch,
+            zone: row.zone || '',
+            ...numericFields,
+            total_deductions: numericFields.total_ded,
+          });
+          newRetailers.add(retailerId);
+        } else {
+          updRetailers.add(retailerId);
+        }
+
+        const { data: existingMonth } = await supabase
+          .from('retailer_monthly')
+          .select('id')
+          .eq('retailer_id', retailerId)
+          .eq('month', month)
+          .maybeSingle();
+
+        if (existingMonth) {
+          await supabase
+            .from('retailer_monthly')
+            .update({ branch, ...numericFields })
+            .eq('id', existingMonth.id);
+          updMonths.add(month);
+        } else {
+          await supabase.from('retailer_monthly').insert({
+            retailer_id: retailerId, branch, month, ...numericFields,
+          });
+          newMonths.add(month);
+        }
+
+        processed++;
+      }
+    }
+
+    await supabase.from('import_log').insert({
+      filename: file.name,
+      imported_by: user.id,
+      rows_processed: processed,
+      rows_skipped: skipped,
+      new_retailers: newRetailers.size,
+      upd_retailers: updRetailers.size,
+      new_months: [...newMonths],
+      upd_months: [...updMonths],
+      status: skipped > 0 ? 'partial' : 'success',
+      error_msg: skipped > 0 ? `${skipped} rows skipped (missing required fields)` : null,
+    });
+
+    setResult({
+      status: skipped > 0 ? 'partial' : 'success',
+      message: `Processed ${processed} rows. ${skipped > 0 ? `${skipped} skipped.` : ''} ${newRetailers.size} new retailers, ${updRetailers.size} updated.`,
+    });
+  };
+
+  const handleKPIImport = async (parsed: Papa.ParseResult<Record<string, string>>) => {
+    const rows = parsed.data;
+    let processed = 0;
+    let skipped = 0;
+    let errors = 0;
+    const newRecords = new Set<string>();
+    const updRecords = new Set<string>();
+    const errorMessages: string[] = [];
+
+    const batchSize = 50;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+
+      for (const row of batch) {
+        try {
+          const branch = row.branch?.trim();
+          const zone = row.zone?.trim();
+          const month = row.month?.trim();
+          const year = parseInt(row.year);
+
+          if (!branch || !zone || !month || !year || isNaN(year)) {
+            console.warn('Skipping row with missing fields:', { branch, zone, month, year });
+            skipped++;
+            continue;
+          }
+
+          const recordId = `${branch}-${zone}-${month}-${year}`;
+          const numericFields = {
+            ga: parseFloat(row.ga) || 0,
+            ga_target: parseFloat(row.ga_target) || 0,
+            uao: parseFloat(row.uao) || 0,
+            uao_target: parseFloat(row.uao_target) || 0,
+            na: parseFloat(row.na) || 0,
+            na_target: parseFloat(row.na_target) || 0,
+          };
+
+          console.log(`Processing: ${recordId}`, numericFields);
+
+          const { data: existing, error: selectError } = await supabase
+            .from('kpi_data')
+            .select('id')
+            .eq('branch', branch)
+            .eq('zone', zone)
+            .eq('month', month)
+            .eq('year', year)
+            .maybeSingle();
+
+          if (selectError) {
+            console.error(`SELECT error for ${recordId}:`, selectError);
+            errorMessages.push(`SELECT failed for ${recordId}: ${selectError.message}`);
+            errors++;
+            continue;
+          }
+
+          if (existing) {
+            const { error: updateError } = await supabase
+              .from('kpi_data')
+              .update(numericFields)
+              .eq('id', existing.id);
+            
+            if (updateError) {
+              console.error(`UPDATE error for ${recordId}:`, updateError);
+              errorMessages.push(`UPDATE failed for ${recordId}: ${updateError.message}`);
+              errors++;
+              continue;
+            }
+            updRecords.add(recordId);
+          } else {
+            const { error: insertError } = await supabase.from('kpi_data').insert({
+              branch,
+              zone,
+              month,
+              year,
+              ...numericFields,
+            });
+            
+            if (insertError) {
+              console.error(`INSERT error for ${recordId}:`, insertError);
+              errorMessages.push(`INSERT failed for ${recordId}: ${insertError.message}`);
+              errors++;
+              continue;
+            }
+            newRecords.add(recordId);
+          }
+
+          processed++;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          console.error('Error processing row:', err);
+          errorMessages.push(msg);
+          errors++;
+        }
+      }
+    }
+
+    await supabase.from('import_log').insert({
+      filename: file.name,
+      imported_by: user.id,
+      rows_processed: processed,
+      rows_skipped: skipped,
+      new_retailers: newRecords.size,
+      upd_retailers: updRecords.size,
+      new_months: [],
+      upd_months: [],
+      status: errors > 0 ? 'failed' : (skipped > 0 ? 'partial' : 'success'),
+      error_msg: errors > 0 ? `${errors} errors: ${errorMessages.slice(0, 3).join('; ')}` : (skipped > 0 ? `${skipped} rows skipped (missing required fields)` : null),
+    });
+
+    const statusMsg = errors > 0 ? `${errors} errors occurred` : (skipped > 0 ? 'partial' : 'success');
+    setResult({
+      status: statusMsg,
+      message: `Processed ${processed} KPI records. Skipped: ${skipped}, Errors: ${errors}. New: ${newRecords.size}, Updated: ${updRecords.size}.${errors > 0 ? ` First errors: ${errorMessages.slice(0, 2).join('; ')}` : ''}`,
+    });
+  };
+
   const clearFile = () => {
     setFile(null);
     setPreview([]);
@@ -189,11 +321,34 @@ export default function DataImport() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-[#21264E]">Data Import</h2>
-        <p className="text-sm text-gray-500 mt-1">Upload CSV files to import retailer performance data</p>
+        <p className="text-sm text-gray-500 mt-1">Upload CSV files to import data</p>
       </div>
 
-      {/* Upload area */}
+      {/* Import Type Selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => { setImportType('retailer'); clearFile(); }}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
+              importType === 'retailer'
+                ? 'bg-[#21264E] text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Retailer Performance
+          </button>
+          <button
+            onClick={() => { setImportType('kpi'); clearFile(); }}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
+              importType === 'kpi'
+                ? 'bg-[#21264E] text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            KPI Data
+          </button>
+        </div>
+
         <h3 className="text-sm font-semibold text-[#21264E] mb-4 flex items-center gap-2">
           <Upload size={16} className="text-[#245bc1]" />
           Upload CSV File
@@ -385,15 +540,28 @@ export default function DataImport() {
         </h3>
         <div className="overflow-x-auto">
           <div className="flex flex-wrap gap-1.5">
-            {['retailer_id', 'branch', 'zone', 'month', 'ga_cnt', 'pi_l6', 'pi_g6', 'np_l6', 'np_g6',
+            {importType === 'retailer' ? (
+              ['retailer_id', 'branch', 'zone', 'month', 'ga_cnt', 'pi_l6', 'pi_g6', 'np_l6', 'np_g6',
               'port_in', 'port_out', 'po_deduction', 'clawback', 'renewal_impact', 'total_ded',
               'pi_raw', 'add_gara', 'pi_total', 'incentive', 'renewal_rate'].map(col => (
-              <span key={col} className="text-xs bg-[#21264E]/5 text-[#21264E] px-2.5 py-1.5 rounded-md font-mono">{col}</span>
-            ))}
+                <span key={col} className="text-xs bg-[#21264E]/5 text-[#21264E] px-2.5 py-1.5 rounded-md font-mono">{col}</span>
+              ))
+            ) : (
+              ['branch', 'zone', 'month', 'year', 'ga', 'ga_target', 'uao', 'uao_target', 'na', 'na_target'].map(col => (
+                <span key={col} className="text-xs bg-[#21264E]/5 text-[#21264E] px-2.5 py-1.5 rounded-md font-mono">{col}</span>
+              ))
+            )}
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-3">
-          Month format: YYYY-MM (e.g., 2024-01). Required columns: retailer_id, branch, month.
+          {importType === 'retailer' ? (
+            <>Month format: YYYY-MM (e.g., 2024-01). Required columns: retailer_id, branch, month.</>
+          ) : (
+            <>
+              Month format: YYYY-MM (e.g., 2024-01). Year format: YYYY (e.g., 2024). 
+              Required columns: branch, zone, month, year, ga, ga_target, uao, uao_target, na, na_target.
+            </>
+          )}
         </p>
       </div>
     </div>

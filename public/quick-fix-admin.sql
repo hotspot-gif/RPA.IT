@@ -22,12 +22,12 @@ INSERT INTO public.rpa_users (
   'Administrator',
   'your-email@example.com',
   'HS-ADMIN',
-  ARRAY['Milan','Bologna','Torino','Padova','Rome','Napoli','Palermo','Bari'],
+  ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA','LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'],
   true
 ) ON CONFLICT (username) DO UPDATE SET
   auth_user_id = EXCLUDED.auth_user_id,
   role = 'HS-ADMIN',
-  branches = ARRAY['Milan','Bologna','Torino','Padova','Rome','Napoli','Palermo','Bari'];
+  branches = ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA','LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'];
 */
 
 -- ============================================================
@@ -43,7 +43,7 @@ SELECT
   'Administrator',
   au.email,
   'HS-ADMIN',
-  ARRAY['Milan','Bologna','Torino','Padova','Rome','Napoli','Palermo','Bari'],
+  ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA','LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'],
   true
 FROM auth.users au
 LEFT JOIN public.rpa_users ru ON ru.auth_user_id = au.id
@@ -51,4 +51,4 @@ WHERE ru.id IS NULL
 ON CONFLICT (username) DO UPDATE SET
   auth_user_id = EXCLUDED.auth_user_id,
   role = 'HS-ADMIN',
-  branches = ARRAY['Milan','Bologna','Torino','Padova','Rome','Napoli','Palermo','Bari'];
+  branches = ARRAY['LMIT-HS-MILAN','LMIT-HS-BOLOGNA','LMIT-HS-TORINO','LMIT-HS-PADOVA','LMIT-HS-ROME','LMIT-HS-NAPLES','LMIT-HS-PALERMO','LMIT-HS-BARI'];
