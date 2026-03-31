@@ -18,7 +18,7 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 async function drawLogoW(pdf: jsPDF, x: number, y: number, h: number): Promise<number> {
   return new Promise((res) => {
-    const timeout = setTimeout(() => res(0), 1500);
+    const timeout = setTimeout(() => res(0), 1000);
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -93,6 +93,54 @@ function tableHeader(pdf: jsPDF, cols: number[], hdrs: string[], yp: number, rh:
   return yp + rh;
 }
 
+/**
+ * Super-fast SVG to Image conversion.
+ * Avoids the heavy DOM-parsing overhead of html2canvas.
+ */
+async function fastChartCapture(el: HTMLElement): Promise<string | null> {
+  const svgs = el.querySelectorAll('svg');
+  if (svgs.length === 0) return null;
+
+  // For multi-SVG containers (like cPY), we draw them to a single canvas
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Use the container's real dimensions
+  canvas.width = el.clientWidth || 800;
+  canvas.height = el.clientHeight || 400;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < svgs.length; i++) {
+    const svg = svgs[i];
+    const xml = new XMLSerializer().serializeToString(svg);
+    // Standard UTF-8 base64 trick
+    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+    const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+    await new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        // Find relative position of this SVG in the container
+        const rect = svg.getBoundingClientRect();
+        const containerRect = el.getBoundingClientRect();
+        const x = rect.left - containerRect.left;
+        const y = rect.top - containerRect.top;
+        ctx.drawImage(img, x, y, rect.width, rect.height);
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = image64;
+    });
+  }
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+  // Manual memory cleanup
+  canvas.width = 0; canvas.height = 0;
+  return dataUrl;
+}
+
 async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw: number, ch: number, title: string) {
   const el = document.getElementById(cid);
   pdf.setFillColor(250, 248, 245);
@@ -104,37 +152,37 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
   pdf.setFont('helvetica', 'bold');
   pdf.text(title, x + 2, yp + 4.5);
 
-  if (!el) {
-    pdf.setFontSize(5);
-    pdf.setTextColor(180, 180, 180);
-    pdf.text('[Chart not available]', x + cw/2, yp + ch/2 + 7, { align: 'center' });
-    return;
-  }
+  if (!el) return;
 
   try {
-    // Add small delay to prevent CPU choking
-    await delay(150);
-    const canvas = await html2canvas(el, { 
-      scale: 0.85, // Even lower scale for speed
-      useCORS: true, 
-      backgroundColor: '#ffffff', 
-      logging: false,
-      imageTimeout: 2000
-    });
-    const url = canvas.toDataURL('image/jpeg', 0.65); // Low quality for speed
-    pdf.addImage(url, 'JPEG', x + 1, yp + 6, cw - 2, ch, undefined, 'FAST');
-    // Release memory
-    canvas.width = 0; canvas.height = 0;
+    // 1. Try super-fast SVG capture first
+    let url = await fastChartCapture(el);
+    
+    // 2. Fallback to html2canvas only if SVG capture failed (e.g. non-SVG content)
+    if (!url) {
+      const canvas = await html2canvas(el, { 
+        scale: 1, 
+        useCORS: true, 
+        backgroundColor: '#ffffff', 
+        logging: false,
+        imageTimeout: 1000
+      });
+      url = canvas.toDataURL('image/jpeg', 0.7);
+      canvas.width = 0; canvas.height = 0;
+    }
+
+    if (url) {
+      pdf.addImage(url, 'JPEG', x + 1, yp + 6, cw - 2, ch, undefined, 'FAST');
+    }
   } catch (e) {
-    pdf.setFontSize(5);
-    pdf.setTextColor(180, 180, 180);
-    pdf.text('[Capture failed]', x + cw/2, yp + ch/2 + 7, { align: 'center' });
+    console.warn('Capture fail', cid, e);
   }
 }
 
 export async function generatePDF(summary: RetailerSummary, monthly: RetailerMonthly[], user: any, setProgress?: (p: number) => void) {
   try {
-    const pdf = new jsPDF('p', 'mm', 'a4', true); // compress PDF
+    // Disable auto-compression for speed, manually using 'FAST' image insertion
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: false });
     const W = 210, H = 297, M = 10, IW = 190;
     const ID = summary.retailer_id;
     const BRANCH = summary.branch;
