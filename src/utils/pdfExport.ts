@@ -94,40 +94,46 @@ function tableHeader(pdf: jsPDF, cols: number[], hdrs: string[], yp: number, rh:
 }
 
 /**
- * Super-fast SVG to Image conversion.
- * Avoids the heavy DOM-parsing overhead of html2canvas.
+ * Super-fast SVG to Image conversion with High Resolution support.
  */
 async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const svgs = el.querySelectorAll('svg');
   if (svgs.length === 0) return null;
 
-  // For multi-SVG containers (like cPY), we draw them to a single canvas
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Use the container's real dimensions
-  canvas.width = el.clientWidth || 800;
-  canvas.height = el.clientHeight || 400;
+  // Use a scale factor for high resolution (2x or 3x)
+  const scale = 2.5; 
+  const containerRect = el.getBoundingClientRect();
+  
+  canvas.width = containerRect.width * scale;
+  canvas.height = containerRect.height * scale;
+  
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(scale, scale);
 
   for (let i = 0; i < svgs.length; i++) {
     const svg = svgs[i];
-    const xml = new XMLSerializer().serializeToString(svg);
-    // Standard UTF-8 base64 trick
+    
+    // Ensure the SVG has explicit dimensions for the XML serializer
+    const svgRect = svg.getBoundingClientRect();
+    const clonedSvg = svg.cloneNode(true) as SVGSVGElement;
+    clonedSvg.setAttribute('width', svgRect.width.toString());
+    clonedSvg.setAttribute('height', svgRect.height.toString());
+    
+    const xml = new XMLSerializer().serializeToString(clonedSvg);
     const svg64 = btoa(unescape(encodeURIComponent(xml)));
     const image64 = 'data:image/svg+xml;base64,' + svg64;
 
     await new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
-        // Find relative position of this SVG in the container
-        const rect = svg.getBoundingClientRect();
-        const containerRect = el.getBoundingClientRect();
-        const x = rect.left - containerRect.left;
-        const y = rect.top - containerRect.top;
-        ctx.drawImage(img, x, y, rect.width, rect.height);
+        const x = svgRect.left - containerRect.left;
+        const y = svgRect.top - containerRect.top;
+        ctx.drawImage(img, x, y, svgRect.width, svgRect.height);
         resolve();
       };
       img.onerror = () => resolve();
@@ -135,8 +141,8 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
     });
   }
 
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-  // Manual memory cleanup
+  // PNG is much clearer for charts than JPEG
+  const dataUrl = canvas.toDataURL('image/png');
   canvas.width = 0; canvas.height = 0;
   return dataUrl;
 }
@@ -155,24 +161,45 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
   if (!el) return;
 
   try {
-    // 1. Try super-fast SVG capture first
+    // 1. Try high-res SVG capture
     let url = await fastChartCapture(el);
     
-    // 2. Fallback to html2canvas only if SVG capture failed (e.g. non-SVG content)
+    // 2. Fallback to html2canvas if SVG capture failed
     if (!url) {
       const canvas = await html2canvas(el, { 
-        scale: 1, 
+        scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff', 
-        logging: false,
-        imageTimeout: 1000
+        logging: false
       });
-      url = canvas.toDataURL('image/jpeg', 0.7);
+      url = canvas.toDataURL('image/png');
       canvas.width = 0; canvas.height = 0;
     }
 
     if (url) {
-      pdf.addImage(url, 'JPEG', x + 1, yp + 6, cw - 2, ch, undefined, 'FAST');
+      // Calculate aspect ratio to prevent stretching
+      const containerRect = el.getBoundingClientRect();
+      const aspectRatio = containerRect.width / containerRect.height;
+      
+      // Calculate display width/height in PDF while maintaining aspect ratio
+      // We prioritize the provided width (cw - 2) and adjust height
+      const displayW = cw - 2;
+      const displayH = displayW / aspectRatio;
+      
+      // If the calculated height is too tall for the box, we scale by height instead
+      let finalW = displayW;
+      let finalH = displayH;
+      
+      if (finalH > ch) {
+        finalH = ch;
+        finalW = finalH * aspectRatio;
+      }
+
+      // Center the image in the box
+      const offsetX = (cw - 2 - finalW) / 2;
+      const offsetY = (ch - finalH) / 2;
+
+      pdf.addImage(url, 'PNG', x + 1 + offsetX, yp + 6 + offsetY, finalW, finalH, undefined, 'FAST');
     }
   } catch (e) {
     console.warn('Capture fail', cid, e);
@@ -181,8 +208,7 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
 
 export async function generatePDF(summary: RetailerSummary, monthly: RetailerMonthly[], user: any, setProgress?: (p: number) => void) {
   try {
-    // Disable auto-compression for speed, manually using 'FAST' image insertion
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: false });
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
     const W = 210, H = 297, M = 10, IW = 190;
     const ID = summary.retailer_id;
     const BRANCH = summary.branch;
