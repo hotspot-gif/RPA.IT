@@ -5,7 +5,7 @@ import type { RpaUser } from '@/types';
 import { normalizeBranch, ALL_BRANCHES, NORTH_REGION as NORTH_BRANCHES, SOUTH_REGION as SOUTH_BRANCHES } from '@/data/mockData';
 import {
   UserPlus, Pencil, Trash2, X, Check, Search, Shield, Building2,
-  Users, AlertTriangle, ChevronDown, Eye, EyeOff,
+  Users, AlertTriangle, ChevronDown, Eye, EyeOff, User,
 } from 'lucide-react';
 
 const ROLES: { value: RpaUser['role']; label: string; color: string }[] = [
@@ -415,9 +415,6 @@ export default function UserManagement() {
                           <button onClick={() => openEdit(u)} className="p-2 text-gray-400 hover:text-[#21264E] hover:bg-gray-100 rounded-lg transition">
                             <Pencil size={16} />
                           </button>
-                          <button onClick={() => setDeleteConfirm(u.id)} className="p-2 text-gray-400 hover:text-[#F04438] hover:bg-red-50 rounded-lg transition">
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -445,9 +442,6 @@ export default function UserManagement() {
                     <div className="flex items-center gap-1">
                       <button onClick={() => openEdit(u)} className="p-2 text-gray-400 hover:text-[#21264E] hover:bg-gray-100 rounded-lg transition">
                         <Pencil size={16} />
-                      </button>
-                      <button onClick={() => setDeleteConfirm(u.id)} className="p-2 text-gray-400 hover:text-[#F04438] hover:bg-red-50 rounded-lg transition">
-                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -494,7 +488,7 @@ export default function UserManagement() {
           return (
             <div key={r.value} className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 flex items-center gap-3">
               <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${r.color} flex items-center justify-center flex-shrink-0`}>
-                <Shield size={16} className="md:size-18" />
+                <User size={16} className="md:w-5 md:h-5" />
               </div>
               <div className="min-w-0">
                 <p className="text-xl md:text-2xl font-bold text-[#21264E]">{count}</p>
@@ -505,7 +499,7 @@ export default function UserManagement() {
         })}
         <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 flex items-center gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#F04438] flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={16} className="md:size-18 text-white" />
+            <AlertTriangle size={16} className="md:w-5 md:h-5 text-white" />
           </div>
           <div className="min-w-0">
             <p className="text-xl md:text-2xl font-bold text-[#21264E]">{users.filter(u => !u.is_active).length}</p>

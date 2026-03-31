@@ -344,7 +344,7 @@ export default function Dashboard() {
             <TrendingUp size={20} />
             {!sidebarCollapsed && 'KPI'}
           </button>
-          {(user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER') && (
+          {user?.role === 'HS-ADMIN' && (
             <button
               onClick={() => setView(VIEWS.IMPORT)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
@@ -355,7 +355,7 @@ export default function Dashboard() {
               {!sidebarCollapsed && 'Data Import'}
             </button>
           )}
-          {(user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER') && (
+          {user?.role === 'HS-ADMIN' && (
             <button
               onClick={() => setView(VIEWS.USERS)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
