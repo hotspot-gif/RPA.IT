@@ -18,7 +18,7 @@ interface Props {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const YEAR_COLORS: Record<string, string> = { '2024': '#006AE0', '2025': '#08DC7D', '2026': '#FFD54F' };
-const PLAN_COLORS = { pi_l6: '#46286E', pi_g6: '#FFD54F', np_l6: '#006AE0', np_g6: '#08DC7D' };
+const PLAN_COLORS = { pi_l6: '#46286E', pi_g6: '#00D7FF', np_l6: '#006AE0', np_g6: '#08DC7D' };
 const DEDUCTION_RED = '#F04438';
 
 const fmt = (v: number) => `€${v.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -83,10 +83,13 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
   // Yearly totals
   const yearlyTotals = useMemo(() => years.map(yr => {
     const mos = sorted.filter(m => m.month.startsWith(yr));
+    const activeMos = mos.filter(m => m.ga_cnt > 0);
     const sum = (fn: (m: RetailerMonthly) => number) => mos.reduce((s, m) => s + fn(m), 0);
+    const totalGa = sum(m => m.ga_cnt);
     return {
       year: yr, monthCount: mos.length,
-      incentive: sum(m => m.incentive), ga_cnt: sum(m => m.ga_cnt),
+      activeMonthCount: activeMos.length,
+      incentive: sum(m => m.incentive), ga_cnt: totalGa,
       pi_l6: sum(m => m.pi_l6), pi_g6: sum(m => m.pi_g6),
       np_l6: sum(m => m.np_l6), np_g6: sum(m => m.np_g6),
       port_in: sum(m => m.port_in), port_out: sum(m => m.port_out),
@@ -94,6 +97,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       renewal_impact: sum(m => m.renewal_impact), total_ded: sum(m => m.total_ded),
       pi_raw: sum(m => m.pi_raw), add_gara: sum(m => m.add_gara),
       pi_total: sum(m => m.pi_total),
+      avg_ga_active: activeMos.length > 0 ? totalGa / activeMos.length : 0,
       renewal_rate: mos.length > 0 ? sum(m => m.renewal_rate) / mos.length : 0,
     };
   }), [years, sorted]);
@@ -497,7 +501,10 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: YEAR_COLORS[yt.year] || '#006AE0' }} />
               <div>
                 <p className="text-xs text-gray-500">{yt.year} Total GA</p>
-                <p className="text-lg font-bold text-[#21264E]">{fmtN(yt.ga_cnt)}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-lg font-bold text-[#21264E]">{fmtN(yt.ga_cnt)}</p>
+                  <p className="text-[10px] text-gray-400 font-medium">Avg: {fmtN(yt.avg_ga_active)}/mo</p>
+                </div>
               </div>
               <div className="ml-auto text-xs text-gray-400">{yt.monthCount} months</div>
             </div>
