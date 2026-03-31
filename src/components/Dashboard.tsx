@@ -136,7 +136,7 @@ export default function Dashboard() {
           }
           
           // Default region logic for ASM/RSM - open with region results
-          if (user.role !== 'HS-ADMIN') {
+          if (user.role !== 'HS-ADMIN' && user.role !== 'COUNTRY-MANAGER') {
              const userBranch = user.branches?.[0] ? normalizeBranch(user.branches[0]) : '';
              let newRegion = 'ITALY';
              if (NORTH_REGION.includes(userBranch)) newRegion = 'NORTH';
