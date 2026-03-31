@@ -4,7 +4,7 @@ export interface RpaUser {
   username: string;
   full_name: string;
   email: string;
-  role: 'HS-ADMIN' | 'RSM' | 'ASM';
+  role: 'HS-ADMIN' | 'COUNTRY-MANAGER' | 'RSM' | 'ASM';
   branches: string[];
   is_active: boolean;
   created_by: string | null;

@@ -10,6 +10,7 @@ import {
 
 const ROLES: { value: RpaUser['role']; label: string; color: string }[] = [
   { value: 'HS-ADMIN', label: 'HS Admin', color: 'bg-[#46286E]' },
+  { value: 'COUNTRY-MANAGER', label: 'Country Manager', color: 'bg-[#21264E]' },
   { value: 'RSM', label: 'Regional Manager', color: 'bg-[#006AE0]' },
   { value: 'ASM', label: 'Area Manager', color: 'bg-[#08DC7D]' },
 ];

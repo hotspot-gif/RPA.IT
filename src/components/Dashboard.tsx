@@ -62,8 +62,8 @@ export default function Dashboard() {
           
           // Filter based on user role
           let availableBranches: string[] = [];
-          if (user.role === 'HS-ADMIN') {
-            // Admin can see all standard branches.
+          if (user.role === 'HS-ADMIN' || user.role === 'COUNTRY-MANAGER') {
+            // Admin and Country Manager can see all standard branches.
             availableBranches = ALL_BRANCHES;
           } else if (user.role === 'RSM') {
             // RSM sees up to 4 assigned branches
@@ -113,7 +113,7 @@ export default function Dashboard() {
           
           // Filter based on user role and region
           let availableKpiBranches: string[] = [];
-          if (user.role === 'HS-ADMIN') {
+          if (user.role === 'HS-ADMIN' || user.role === 'COUNTRY-MANAGER') {
             availableKpiBranches = (uniqueKpiBranches as string[]);
           } else {
             const userBranches = (user.branches || []).map(normalizeBranch);
@@ -430,7 +430,7 @@ export default function Dashboard() {
                     onChange={e => setKpiRegion(e.target.value)}
                     className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
                   >
-                    {user?.role === 'HS-ADMIN' ? (
+                    {user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER' ? (
                       <>
                         <option value="ITALY">ITALY (All)</option>
                         <option value="NORTH">NORTH</option>
@@ -537,20 +537,15 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* PDF Export - only show for DASHBOARD */}
+            {/* PDF Export - always on the right if in DASHBOARD view */}
             {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (
               <button
                 onClick={handleExportPDF}
                 disabled={exportingPdf}
-                className="flex items-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 whitespace-nowrap"
               >
                 <FileDown size={16} />
                 {exportingPdf ? `Exporting... ${pdfProgress}%` : 'Export PDF'}
-                {exportingPdf && (
-                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-white transition-all duration-300" style={{ width: `${pdfProgress}%` }} />
-                  </div>
-                )}
               </button>
             )}
           </header>
