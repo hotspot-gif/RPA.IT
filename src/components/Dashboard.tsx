@@ -298,8 +298,17 @@ export default function Dashboard() {
     setPdfProgress(0);
   };
 
-  const roleLabel = user?.role === 'HS-ADMIN' ? 'Admin' : user?.role === 'RSM' ? 'Regional Manager' : 'Area Manager';
-  const roleBadgeColor = user?.role === 'HS-ADMIN' ? 'bg-[#46286E]' : user?.role === 'RSM' ? 'bg-[#006AE0]' : 'bg-[#08DC7D]';
+  const roleLabel = 
+    user?.role === 'HS-ADMIN' ? 'Admin' : 
+    user?.role === 'COUNTRY-MANAGER' ? 'Country Manager' :
+    user?.role === 'RSM' ? 'Regional Manager' : 
+    'Area Manager';
+
+  const roleBadgeColor = 
+    user?.role === 'HS-ADMIN' ? 'bg-[#46286E]' : 
+    user?.role === 'COUNTRY-MANAGER' ? 'bg-[#21264E]' :
+    user?.role === 'RSM' ? 'bg-[#006AE0]' : 
+    'bg-[#08DC7D]';
 
   return (
     <div className="flex h-screen bg-[#fff7f2] overflow-hidden">
@@ -335,7 +344,7 @@ export default function Dashboard() {
             <TrendingUp size={20} />
             {!sidebarCollapsed && 'KPI'}
           </button>
-          {user?.role === 'HS-ADMIN' && (
+          {(user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER') && (
             <button
               onClick={() => setView(VIEWS.IMPORT)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
@@ -346,7 +355,7 @@ export default function Dashboard() {
               {!sidebarCollapsed && 'Data Import'}
             </button>
           )}
-          {user?.role === 'HS-ADMIN' && (
+          {(user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER') && (
             <button
               onClick={() => setView(VIEWS.USERS)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${

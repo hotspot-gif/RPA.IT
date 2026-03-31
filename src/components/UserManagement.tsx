@@ -112,7 +112,7 @@ export default function UserManagement() {
 
   const handleRoleChange = (role: RpaUser['role']) => {
     let branches = form.branches;
-    if (role === 'HS-ADMIN') branches = [...ALL_BRANCHES];
+    if (role === 'HS-ADMIN' || role === 'COUNTRY-MANAGER') branches = [...ALL_BRANCHES];
     else if (role === 'RSM') branches = branches.length > 4 ? [...NORTH_BRANCHES] : branches;
     else if (role === 'ASM') branches = branches.length > 1 ? [branches[0]] : branches;
     setForm(prev => ({ ...prev, role, branches }));
@@ -319,9 +319,9 @@ export default function UserManagement() {
             className="appearance-none pl-3 pr-8 py-2.5 text-sm border border-gray-200 rounded-xl text-[#21264E] bg-white focus:ring-2 focus:ring-[#245bc1] outline-none cursor-pointer"
           >
             <option value="all">All Roles</option>
-            <option value="HS-ADMIN">HS Admin</option>
-            <option value="RSM">Regional Manager</option>
-            <option value="ASM">Area Manager</option>
+            {ROLES.map(r => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
           </select>
           <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
@@ -363,7 +363,7 @@ export default function UserManagement() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                        u.role === 'HS-ADMIN' ? 'bg-[#46286E]' : u.role === 'RSM' ? 'bg-[#006AE0]' : 'bg-[#08DC7D]'
+                        ROLES.find(r => r.value === u.role)?.color || 'bg-gray-400'
                       }`}>
                         {u.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
@@ -614,6 +614,7 @@ export default function UserManagement() {
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1.5">
                   {form.role === 'HS-ADMIN' && 'Full access to all branches, data import, and user management'}
+                  {form.role === 'COUNTRY-MANAGER' && 'National oversight with access to all branches'}
                   {form.role === 'RSM' && 'Access to assigned regional branches (up to 4)'}
                   {form.role === 'ASM' && 'Access to a single assigned branch only'}
                 </p>
