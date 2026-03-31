@@ -18,7 +18,7 @@ interface Props {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const YEAR_COLORS: Record<string, string> = { '2024': '#006AE0', '2025': '#08DC7D', '2026': '#FFD54F' };
-const PLAN_COLORS = { pi_l6: '#46286E', pi_g6: '#21264E', np_l6: '#006AE0', np_g6: '#08DC7D' };
+const PLAN_COLORS = { pi_l6: '#46286E', pi_g6: '#FFD54F', np_l6: '#006AE0', np_g6: '#08DC7D' };
 const DEDUCTION_RED = '#F04438';
 
 const fmt = (v: number) => `€${v.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -164,7 +164,6 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
     year: yt.year,
     pi_total: yt.pi_total,
     incentive: yt.incentive,
-    fill: YEAR_COLORS[yt.year] || '#006AE0',
   })), [yearlyTotals]);
 
   // Deductions monthly
