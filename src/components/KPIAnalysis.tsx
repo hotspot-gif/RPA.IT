@@ -15,6 +15,7 @@ interface KPIAnalysisProps {
 interface ChartData {
   month: string;
   ga: number;
+  ga_actual: number;
   ga_target: number;
   uao: number;
   uao_target: number;
@@ -191,6 +192,7 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
         return {
           month: new Date(`${item.month}-01`).toLocaleDateString('en-US', { month: 'short' }),
           ga: gaBaseActual,
+          ga_actual: item.ga,
           ga_target: item.ga_target,
           ga_shortfall: gaShortfall,
           ga_over_achievement: gaOverAchievement,
@@ -244,6 +246,7 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
         const prevYearData = Array.from(prevMonthlyAggregation.values()).map(item => ({
           month: new Date(`${item.month}-01`).toLocaleDateString('en-US', { month: 'short' }),
           ga: item.ga,
+          ga_actual: item.ga,
           ga_target: item.ga_target,
           uao: item.uao,
           uao_target: item.uao_target,
@@ -422,13 +425,19 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 }}
                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
-                formatter={(value, name) => {
+                formatter={(value, name, props) => {
                   const nameMap: { [key: string]: string } = {
                     ga: 'Actual',
                     ga_shortfall: 'Shortfall',
                     ga_over_achievement: 'Over-Achievement',
                     ga_target: 'Target'
                   };
+                  
+                  // Use real actual value for the 'Actual' label
+                  if (name === 'ga' && props.payload?.ga_actual !== undefined) {
+                    return [Math.round(props.payload.ga_actual * 100) / 100, 'Actual'];
+                  }
+                  
                   return [Math.round(value as number * 100) / 100, nameMap[name] || name];
                 }}
               />
