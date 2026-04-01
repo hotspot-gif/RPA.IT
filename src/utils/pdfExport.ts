@@ -6,15 +6,12 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 const fe2 = (v: number) => `EUR ${Number(v || 0).toLocaleString('en', { maximumFractionDigits: 0 })}`;
 const fn2 = (v: number) => Number(v || 0).toLocaleString('en', { maximumFractionDigits: 0 });
-const fp2 = (v: number) => `${Number(v || 0).toFixed(1)}%`;
 
 const hR = (h: string) => [
   parseInt(h.slice(1, 3), 16),
   parseInt(h.slice(3, 5), 16),
   parseInt(h.slice(5, 7), 16)
 ];
-
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 async function drawLogoW(pdf: jsPDF, x: number, y: number, h: number): Promise<number> {
   return new Promise((res) => {
@@ -93,9 +90,32 @@ function tableHeader(pdf: jsPDF, cols: number[], hdrs: string[], yp: number, rh:
   return yp + rh;
 }
 
-/**
- * Super-fast SVG to Image conversion with High Resolution support.
- */
+function getCaptureRect(el: HTMLElement) {
+  const elRect = el.getBoundingClientRect();
+  let left = elRect.left;
+  let top = elRect.top;
+  let right = elRect.right;
+  let bottom = elRect.bottom;
+
+  const parts: Element[] = [
+    ...Array.from(el.querySelectorAll('svg')),
+    ...Array.from(el.querySelectorAll('.recharts-legend-wrapper'))
+  ];
+
+  for (const p of parts) {
+    const r = (p as HTMLElement).getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) continue;
+    left = Math.min(left, r.left);
+    top = Math.min(top, r.top);
+    right = Math.max(right, r.right);
+    bottom = Math.max(bottom, r.bottom);
+  }
+
+  const width = Math.max(1, right - left);
+  const height = Math.max(1, bottom - top);
+  return { left, top, width, height };
+}
+
 async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const svgs = el.querySelectorAll('svg');
   if (svgs.length === 0) return null;
@@ -104,21 +124,19 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Use a scale factor for high resolution (2x or 3x)
-  const scale = 2.5; 
-  const containerRect = el.getBoundingClientRect();
-  
-  canvas.width = containerRect.width * scale;
-  canvas.height = containerRect.height * scale;
-  
+  const scale = 2.5;
+  const captureRect = getCaptureRect(el);
+
+  canvas.width = Math.ceil(captureRect.width * scale);
+  canvas.height = Math.ceil(captureRect.height * scale);
+
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.scale(scale, scale);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
   for (let i = 0; i < svgs.length; i++) {
     const svg = svgs[i];
     
-    // Ensure the SVG has explicit dimensions for the XML serializer
     const svgRect = svg.getBoundingClientRect();
     const clonedSvg = svg.cloneNode(true) as SVGSVGElement;
     clonedSvg.setAttribute('width', svgRect.width.toString());
@@ -131,8 +149,8 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
     await new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const x = svgRect.left - containerRect.left;
-        const y = svgRect.top - containerRect.top;
+        const x = svgRect.left - captureRect.left;
+        const y = svgRect.top - captureRect.top;
         ctx.drawImage(img, x, y, svgRect.width, svgRect.height);
         resolve();
       };
@@ -141,7 +159,28 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
     });
   }
 
-  // PNG is much clearer for charts than JPEG
+  const legends = el.querySelectorAll('.recharts-legend-wrapper');
+  for (let i = 0; i < legends.length; i++) {
+    const legendEl = legends[i] as HTMLElement;
+    const legendRect = legendEl.getBoundingClientRect();
+    if (legendRect.width <= 0 || legendRect.height <= 0) continue;
+    try {
+      const legendCanvas = await html2canvas(legendEl, {
+        scale: 1,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+        imageTimeout: 800
+      });
+      const x = legendRect.left - captureRect.left;
+      const y = legendRect.top - captureRect.top;
+      ctx.drawImage(legendCanvas, x, y, legendRect.width, legendRect.height);
+      legendCanvas.width = 0;
+      legendCanvas.height = 0;
+    } catch {
+    }
+  }
+
   const dataUrl = canvas.toDataURL('image/png');
   canvas.width = 0; canvas.height = 0;
   return dataUrl;
@@ -178,8 +217,8 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
 
     if (url) {
       // Calculate aspect ratio to prevent stretching
-      const containerRect = el.getBoundingClientRect();
-      const aspectRatio = containerRect.width / containerRect.height;
+      const captureRect = getCaptureRect(el);
+      const aspectRatio = captureRect.width / captureRect.height;
       
       // Calculate display width/height in PDF while maintaining aspect ratio
       // We prioritize the provided width (cw - 2) and adjust height
@@ -227,7 +266,6 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     const tG = () => pdf.setTextColor(5, 163, 93);
     const tR = () => pdf.setTextColor(240, 68, 56);
     const tB = () => pdf.setTextColor(0, 106, 224);
-    const tY = () => pdf.setTextColor(155, 120, 0);
     const sF = (r: number, g: number, b: number) => pdf.setFillColor(r, g, b);
 
     // Page 1
