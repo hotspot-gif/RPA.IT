@@ -8,7 +8,7 @@ import DataImport from '@/components/DataImport';
 import UserManagement from '@/components/UserManagement';
 import KPIAnalysis from '@/components/KPIAnalysis';
 import {
-  LayoutDashboard, Upload, LogOut, Search, User, Building2, Shield, FileDown, ChevronLeft, ChevronRight, Users, TrendingUp, Globe,
+  LayoutDashboard, Upload, LogOut, Search, User, Building2, Shield, FileDown, ChevronLeft, ChevronRight, Users, TrendingUp, Globe, Menu, X,
 } from 'lucide-react';
 import { generatePDF } from '@/utils/pdfExport';
 import { ALL_BRANCHES, BRANCH_TO_ZONES, normalizeBranch, NORTH_REGION, SOUTH_REGION } from '@/data/mockData';
@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // KPI-specific filters (independent from dashboard)
   const [kpiBranch, setKpiBranch] = useState('');
@@ -307,66 +308,87 @@ export default function Dashboard() {
      'bg-[#08DC7D]';
 
   return (
-    <div className="flex h-screen bg-[#fff7f2] overflow-hidden">
+    <div className="flex h-screen bg-[#fff7f2] overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-[72px]' : 'w-64'} bg-[#21264E] text-white flex flex-col transition-all duration-300 flex-shrink-0`}>
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 md:relative 
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-64 w-64'} 
+        bg-[#21264E] text-white flex flex-col transition-all duration-300 flex-shrink-0
+      `}>
+        {/* Mobile Close Button */}
+        <button 
+          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden absolute top-4 right-4 p-2 text-white/60 hover:text-white"
+        >
+          <X size={20} />
+        </button>
+
         {/* Logo */}
         <div className="p-4 border-b border-white/10 flex items-center justify-center gap-3">
           <img
             src="https://cms-assets.ldsvcplatform.com/IT/s3fs-public/2023-09/MicrosoftTeams-image%20%2813%29.png"
             alt="Logo"
-            className={`flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'h-8 w-8' : 'h-10 w-10'}`}
+            className={`flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'md:h-8 md:w-8 h-10 w-10' : 'h-10 w-10'}`}
           />
-          {!sidebarCollapsed && <span className="font-bold text-sm leading-tight">Retailer<br/>Analytics</span>}
+          {(!sidebarCollapsed || mobileMenuOpen) && <span className="font-bold text-sm leading-tight">Retailer<br/>Analytics</span>}
         </div>
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
           <button
-            onClick={() => setView(VIEWS.DASHBOARD)}
+            onClick={() => { setView(VIEWS.DASHBOARD); setMobileMenuOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
               view === VIEWS.DASHBOARD ? 'bg-white/15 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <LayoutDashboard size={20} />
-            {!sidebarCollapsed && 'Dashboard'}
+            {(!sidebarCollapsed || mobileMenuOpen) && 'Dashboard'}
           </button>
           <button
-            onClick={() => setView(VIEWS.KPI)}
+            onClick={() => { setView(VIEWS.KPI); setMobileMenuOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
               view === VIEWS.KPI ? 'bg-white/15 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <TrendingUp size={20} />
-            {!sidebarCollapsed && 'KPI'}
+            {(!sidebarCollapsed || mobileMenuOpen) && 'KPI'}
           </button>
           {user?.role === 'HS-ADMIN' && (
             <button
-              onClick={() => setView(VIEWS.IMPORT)}
+              onClick={() => { setView(VIEWS.IMPORT); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                 view === VIEWS.IMPORT ? 'bg-white/15 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
               }`}
             >
               <Upload size={20} />
-              {!sidebarCollapsed && 'Data Import'}
+              {(!sidebarCollapsed || mobileMenuOpen) && 'Data Import'}
             </button>
           )}
           {user?.role === 'HS-ADMIN' && (
             <button
-              onClick={() => setView(VIEWS.USERS)}
+              onClick={() => { setView(VIEWS.USERS); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                 view === VIEWS.USERS ? 'bg-white/15 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
               }`}
             >
               <Users size={20} />
-              {!sidebarCollapsed && 'User Management'}
+              {(!sidebarCollapsed || mobileMenuOpen) && 'User Management'}
             </button>
           )}
         </nav>
 
         {/* User */}
         <div className="p-4 border-t border-white/10">
-          {!sidebarCollapsed && (
+          {(!sidebarCollapsed || mobileMenuOpen) && (
             <>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -390,14 +412,14 @@ export default function Dashboard() {
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition"
           >
             <LogOut size={16} />
-            {!sidebarCollapsed && 'Sign Out'}
+            {(!sidebarCollapsed || mobileMenuOpen) && 'Sign Out'}
           </button>
         </div>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle (only on desktop) */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-2.5 text-white/40 hover:text-white text-center border-t border-white/10 flex items-center justify-center"
+          className="hidden md:flex p-2.5 text-white/40 hover:text-white text-center border-t border-white/10 items-center justify-center"
         >
           {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
@@ -406,154 +428,174 @@ export default function Dashboard() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
-        {(view === VIEWS.DASHBOARD || view === VIEWS.KPI) && (
-          <header className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-4 flex-shrink-0">
-            {/* DASHBOARD - Branch selector */}
-            {view === VIEWS.DASHBOARD && (
-              <div className="w-full md:w-auto flex items-center gap-2">
+        <header className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-4 flex-shrink-0">
+          {/* Mobile Sidebar Toggle */}
+          <button 
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden p-2 text-[#21264E] hover:bg-gray-100 rounded-lg self-start"
+          >
+            <Menu size={20} />
+          </button>
+
+          {/* DASHBOARD - Branch selector */}
+          {view === VIEWS.DASHBOARD && (
+            <div className="w-full md:w-auto flex items-center gap-2">
+              <Shield size={16} className="text-[#21264E]" />
+              <select
+                value={selectedBranch}
+                onChange={e => setSelectedBranch(e.target.value)}
+                className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+              >
+                {branches.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* KPI - Branch selector (independent, from kpi_data table) */}
+          {view === VIEWS.KPI && (
+            <div className="flex items-center gap-4">
+              {/* Region filter */}
+              <div className="flex items-center gap-2 min-w-[140px]">
+                <Globe size={16} className="text-[#21264E]" />
+                <select
+                  value={kpiRegion}
+                  onChange={e => setKpiRegion(e.target.value)}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                >
+                  {user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER' ? (
+                    <>
+                      <option value="ITALY">ITALY (All)</option>
+                      <option value="NORTH">NORTH</option>
+                      <option value="SOUTH">SOUTH</option>
+                    </>
+                  ) : (
+                    <option value={kpiRegion}>{kpiRegion}</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Branch selector */}
+              <div className="flex items-center gap-2 min-w-[180px] max-w-[220px]">
                 <Shield size={16} className="text-[#21264E]" />
                 <select
-                  value={selectedBranch}
-                  onChange={e => setSelectedBranch(e.target.value)}
-                  className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                  value={kpiBranch}
+                  onChange={e => setKpiBranch(e.target.value)}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
                 >
-                  {branches.map(b => (
+                  <option value="">{kpiRegion === 'ITALY' ? 'All Branches' : `All ${kpiRegion} Branches`}</option>
+                  {kpiBranches.map(b => (
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* KPI - Branch selector (independent, from kpi_data table) */}
-            {view === VIEWS.KPI && (
-              <div className="flex items-center gap-4">
-                {/* Region filter */}
-                <div className="flex items-center gap-2 min-w-[140px]">
-                  <Globe size={16} className="text-[#21264E]" />
-                  <select
-                    value={kpiRegion}
-                    onChange={e => setKpiRegion(e.target.value)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                  >
-                    {user?.role === 'HS-ADMIN' || user?.role === 'COUNTRY-MANAGER' ? (
-                      <>
-                        <option value="ITALY">ITALY (All)</option>
-                        <option value="NORTH">NORTH</option>
-                        <option value="SOUTH">SOUTH</option>
-                      </>
-                    ) : (
-                      <option value={kpiRegion}>{kpiRegion}</option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Branch selector */}
-                <div className="flex items-center gap-2 min-w-[180px] max-w-[220px]">
-                  <Shield size={16} className="text-[#21264E]" />
-                  <select
-                    value={kpiBranch}
-                    onChange={e => setKpiBranch(e.target.value)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                  >
-                    <option value="">{kpiRegion === 'ITALY' ? 'All Branches' : `All ${kpiRegion} Branches`}</option>
-                    {kpiBranches.map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* DASHBOARD - Zone selector */}
-            {view === VIEWS.DASHBOARD && (
-              <div className="w-full md:w-auto flex items-center gap-2">
-                <Building2 size={16} className="text-[#21264E]" />
-                <select
-                  value={selectedZone}
-                  onChange={e => setSelectedZone(e.target.value)}
-                  className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                >
-                  <option value="">All Zones</option>
-                  {zones.map(z => (
-                    <option key={z} value={z}>{z}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* KPI - Zone selector (independent) */}
-            {view === VIEWS.KPI && (
-              <div className="flex items-center gap-2">
-                <Building2 size={16} className="text-[#21264E]" />
-                <select
-                  value={kpiZone}
-                  onChange={e => setKpiZone(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                >
-                  <option value="">All Zones</option>
-                  {kpiZones.map(z => (
-                    <option key={z} value={z}>{z}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Retailer selector - only show for DASHBOARD */}
-            {view === VIEWS.DASHBOARD && (
-              <div className="relative w-full md:flex-1 md:max-w-md">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={retailerSearch}
-                  onChange={e => { setRetailerSearch(e.target.value); setShowRetailerDropdown(true); }}
-                  onFocus={() => setShowRetailerDropdown(true)}
-                  placeholder={loadingRetailers ? 'Loading retailers...' : `Search retailers in ${selectedBranch}...`}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg text-[#21264E] placeholder:text-gray-400 focus:ring-2 focus:ring-[#245bc1] outline-none"
-                />
-                {showRetailerDropdown && filteredRetailers.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50">
-                    {filteredRetailers.map(r => (
-                      <button
-                        key={r.retailer_id}
-                        onClick={() => {
-                          setSelectedRetailerId(r.retailer_id);
-                          setRetailerSearch(r.retailer_id);
-                          setShowRetailerDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#fff7f2] transition flex items-center justify-between ${
-                          r.retailer_id === selectedRetailerId ? 'bg-[#fff7f2] font-medium' : ''
-                        }`}
-                      >
-                        <span className="text-[#21264E]">{r.retailer_id}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Selected retailer info - only show for DASHBOARD */}
-            {view === VIEWS.DASHBOARD && selectedSummary && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className={`text-[10px] font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded ${selectedSummary.zone.toLowerCase().includes('shop closed') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                  {selectedSummary.zone.toLowerCase().includes('shop closed') ? 'Inactive' : 'Active'}
-                </span>
-              </div>
-            )}
-
-            {/* PDF Export - always on the right if in DASHBOARD view */}
-            {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (
-              <button
-                onClick={handleExportPDF}
-                disabled={exportingPdf}
-                className="w-full md:w-auto md:ml-auto md:self-auto self-end flex items-center justify-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 whitespace-nowrap"
+          {/* DASHBOARD - Zone selector */}
+          {view === VIEWS.DASHBOARD && (
+            <div className="w-full md:w-auto flex items-center gap-2">
+              <Building2 size={16} className="text-[#21264E]" />
+              <select
+                value={selectedZone}
+                onChange={e => setSelectedZone(e.target.value)}
+                className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
               >
-                <FileDown size={16} />
-                {exportingPdf ? `Exporting... ${pdfProgress}%` : 'Export PDF'}
-              </button>
-            )}
-          </header>
-        )}
+                <option value="">All Zones</option>
+                {zones.map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* KPI - Zone selector (independent) */}
+          {view === VIEWS.KPI && (
+            <div className="flex items-center gap-2">
+              <Building2 size={16} className="text-[#21264E]" />
+              <select
+                value={kpiZone}
+                onChange={e => setKpiZone(e.target.value)}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+              >
+                <option value="">All Zones</option>
+                {kpiZones.map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* View Title for non-dashboard/kpi views */}
+          {view === VIEWS.IMPORT && (
+            <div className="flex items-center gap-2 text-[#21264E] font-bold">
+              <Upload size={18} />
+              <span>Data Import</span>
+            </div>
+          )}
+          {view === VIEWS.USERS && (
+            <div className="flex items-center gap-2 text-[#21264E] font-bold">
+              <Users size={18} />
+              <span>User Management</span>
+            </div>
+          )}
+
+          {/* Retailer selector - only show for DASHBOARD */}
+          {view === VIEWS.DASHBOARD && (
+            <div className="relative w-full md:flex-1 md:max-w-md">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={retailerSearch}
+                onChange={e => { setRetailerSearch(e.target.value); setShowRetailerDropdown(true); }}
+                onFocus={() => setShowRetailerDropdown(true)}
+                placeholder={loadingRetailers ? 'Loading retailers...' : `Search retailers in ${selectedBranch}...`}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg text-[#21264E] placeholder:text-gray-400 focus:ring-2 focus:ring-[#245bc1] outline-none"
+              />
+              {showRetailerDropdown && filteredRetailers.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50">
+                  {filteredRetailers.map(r => (
+                    <button
+                      key={r.retailer_id}
+                      onClick={() => {
+                        setSelectedRetailerId(r.retailer_id);
+                        setRetailerSearch(r.retailer_id);
+                        setShowRetailerDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#fff7f2] transition flex items-center justify-between ${
+                        r.retailer_id === selectedRetailerId ? 'bg-[#fff7f2] font-medium' : ''
+                      }`}
+                    >
+                      <span className="text-[#21264E]">{r.retailer_id}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Selected retailer info - only show for DASHBOARD */}
+          {view === VIEWS.DASHBOARD && selectedSummary && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`text-[10px] font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded ${selectedSummary.zone.toLowerCase().includes('shop closed') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                {selectedSummary.zone.toLowerCase().includes('shop closed') ? 'Inactive' : 'Active'}
+              </span>
+            </div>
+          )}
+
+          {/* PDF Export - always on the right if in DASHBOARD view */}
+          {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (
+            <button
+              onClick={handleExportPDF}
+              disabled={exportingPdf}
+              className="w-full md:w-auto md:ml-auto md:self-auto self-end flex items-center justify-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 whitespace-nowrap"
+            >
+              <FileDown size={16} />
+              {exportingPdf ? `Exporting... ${pdfProgress}%` : 'Export PDF'}
+            </button>
+          )}
+        </header>
 
         {/* Click-away listener for dropdown */}
         {showRetailerDropdown && (
