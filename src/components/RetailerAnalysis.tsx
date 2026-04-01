@@ -465,7 +465,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {planMixByYear.map(pm => (
             <div key={pm.year} className="text-center">
-              <p className="text-sm font-semibold mb-2" style={{ color: YEAR_COLORS[pm.year] || '#21264E' }}>{pm.year}</p>
+              <p className="text-sm font-semibold mb-2 pdf-planmix-year" style={{ color: YEAR_COLORS[pm.year] || '#21264E' }}>{pm.year}</p>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
@@ -486,7 +486,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
+        <div className="mt-4 flex items-center justify-center gap-4 flex-wrap pdf-planmix-legend">
           {planMixByYear[0]?.data.map((d, i) => (
             <span key={i} className="flex items-center gap-2 text-xs text-[#21264E]">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
@@ -498,7 +498,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
 
       {/* 11. GA ACTIVATIONS - CALENDAR OVERLAY */}
       <ChartCard title="GA Activations - Calendar Overlay" id="cGA">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4 pdf-ga-tiles">
           {yearlyTotals.map(yt => (
             <div key={yt.year} className="flex items-center gap-3 bg-[#fff7f2] rounded-lg p-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: YEAR_COLORS[yt.year] || '#006AE0' }} />
@@ -513,21 +513,23 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
             </div>
           ))}
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={calendarOverlay}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="monthName" tick={{ fill: '#21264E', fontSize: 12 }} />
-            <YAxis tick={{ fill: '#21264E', fontSize: 11 }} />
-            <Tooltip content={<CTooltip />} />
-            <Legend />
-            {years.map(yr => (
-              <Line key={yr} type="monotone" dataKey={`ga_${yr}`} name={`GA ${yr}`}
-                stroke={YEAR_COLORS[yr] || '#006AE0'} strokeWidth={2.5}
-                dot={{ r: 5, strokeWidth: 2, fill: '#fff' }}
-                activeDot={{ r: 7, strokeWidth: 2 }} isAnimationActive={false} />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+        <div id="cGAC">
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={calendarOverlay}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="monthName" tick={{ fill: '#21264E', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#21264E', fontSize: 11 }} />
+              <Tooltip content={<CTooltip />} />
+              <Legend />
+              {years.map(yr => (
+                <Line key={yr} type="monotone" dataKey={`ga_${yr}`} name={`GA ${yr}`}
+                  stroke={YEAR_COLORS[yr] || '#006AE0'} strokeWidth={2.5}
+                  dot={{ r: 5, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 7, strokeWidth: 2 }} isAnimationActive={false} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </ChartCard>
 
       {/* 11b. GA ACTIVATIONS - FULL TIMELINE BAR CHART */}

@@ -99,7 +99,9 @@ function getCaptureRect(el: HTMLElement) {
 
   const parts: Element[] = [
     ...Array.from(el.querySelectorAll('svg')),
-    ...Array.from(el.querySelectorAll('.recharts-legend-wrapper'))
+    ...Array.from(el.querySelectorAll('.recharts-legend-wrapper')),
+    ...Array.from(el.querySelectorAll('.pdf-planmix-legend')),
+    ...Array.from(el.querySelectorAll('.pdf-planmix-year'))
   ];
 
   for (const p of parts) {
@@ -124,7 +126,7 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  const scale = 2.5;
+  const scale = 2;
   const captureRect = getCaptureRect(el);
 
   canvas.width = Math.ceil(captureRect.width * scale);
@@ -159,24 +161,24 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
     });
   }
 
-  const legends = el.querySelectorAll('.recharts-legend-wrapper');
-  for (let i = 0; i < legends.length; i++) {
-    const legendEl = legends[i] as HTMLElement;
-    const legendRect = legendEl.getBoundingClientRect();
-    if (legendRect.width <= 0 || legendRect.height <= 0) continue;
+  const htmlParts = el.querySelectorAll('.recharts-legend-wrapper, .pdf-planmix-legend, .pdf-planmix-year');
+  for (let i = 0; i < htmlParts.length; i++) {
+    const partEl = htmlParts[i] as HTMLElement;
+    const partRect = partEl.getBoundingClientRect();
+    if (partRect.width <= 0 || partRect.height <= 0) continue;
     try {
-      const legendCanvas = await html2canvas(legendEl, {
+      const partCanvas = await html2canvas(partEl, {
         scale: 1,
         useCORS: true,
         backgroundColor: null,
         logging: false,
         imageTimeout: 800
       });
-      const x = legendRect.left - captureRect.left;
-      const y = legendRect.top - captureRect.top;
-      ctx.drawImage(legendCanvas, x, y, legendRect.width, legendRect.height);
-      legendCanvas.width = 0;
-      legendCanvas.height = 0;
+      const x = partRect.left - captureRect.left;
+      const y = partRect.top - captureRect.top;
+      ctx.drawImage(partCanvas, x, y, partRect.width, partRect.height);
+      partCanvas.width = 0;
+      partCanvas.height = 0;
     } catch {
     }
   }
@@ -341,7 +343,6 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     await addChartToPDF(pdf, 'cYB', M, y, HW, HR, 'Annual Incentive YoY');
     await addChartToPDF(pdf, 'cMO', M + HW + 3, y, HW, HR, 'Monthly Incentive Overlay');
     y += HR + 10;
-    y += HR + 10;
     await addChartToPDF(pdf, 'cMF', M, y, IW, 36, 'Full Monthly Incentive Timeline');
     addFooter(pdf, 1, W, H, M, BRANCH, user.full_name);
 
@@ -349,9 +350,47 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     setProgress?.(35);
     pdf.addPage(); y = await addPageHeader(pdf, 2, 'GA Report', W, M, ID);
     y = sectionHeader(pdf, 'GA REPORT', y, M, IW);
-    await addChartToPDF(pdf, 'cGA', M, y, IW, 120, 'GA Activations - Calendar Overlay');
-    y += 135;
-    await addChartToPDF(pdf, 'cGT', M, y, IW, 90, 'GA Activations - Full Timeline');
+
+    const gaYears = ['2024', '2025', '2026'].map((yr) => {
+      const mos = monthly.filter(m => m.month.startsWith(yr));
+      const total = mos.reduce((s, m) => s + (m.ga_cnt || 0), 0);
+      const activeMonths = mos.reduce((s, m) => s + ((m.ga_cnt || 0) > 0 ? 1 : 0), 0);
+      const avgActive = activeMonths > 0 ? total / activeMonths : 0;
+      return { yr, total, avgActive, monthCount: mos.length };
+    });
+
+    const gaTileW = (IW - 6) / 3;
+    const gaTileH = 16;
+    gaYears.forEach((gy, idx) => {
+      const tx = M + idx * (gaTileW + 3);
+      const ty = y;
+      pdf.setFillColor(255, 247, 242);
+      pdf.setDrawColor(220, 215, 210);
+      pdf.setLineWidth(0.25);
+      pdf.roundedRect(tx, ty, gaTileW, gaTileH, 2, 2, 'FD');
+      const yc = hR(gy.yr === '2024' ? '#006AE0' : gy.yr === '2025' ? '#08DC7D' : '#FFD54F');
+      pdf.setFillColor(yc[0], yc[1], yc[2]);
+      pdf.circle(tx + 5, ty + 5.5, 2, 'F');
+      pdf.setTextColor(100, 100, 120);
+      pdf.setFontSize(5.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${gy.yr} Total GA`, tx + 10, ty + 5.8);
+      pdf.setTextColor(33, 38, 78);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(fn2(gy.total), tx + 10, ty + 11.7);
+      pdf.setTextColor(140, 140, 150);
+      pdf.setFontSize(5.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Avg: ${fn2(gy.avgActive)}/mo`, tx + gaTileW - 2, ty + 11.7, { align: 'right' });
+      pdf.text(`${gy.monthCount} months`, tx + gaTileW - 2, ty + 14.8, { align: 'right' });
+    });
+
+    y += gaTileH + 6;
+
+    await addChartToPDF(pdf, 'cGAC', M, y, IW, 110, 'GA Activations - Calendar Overlay');
+    y += 125;
+    await addChartToPDF(pdf, 'cGT', M, y, IW, 85, 'GA Activations - Full Timeline');
     addFooter(pdf, 2, W, H, M, BRANCH, user.full_name);
 
     // Page 3
@@ -371,7 +410,7 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN <=6.99 vs P-IN >6.99');
     await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW <=6.99 vs NEW >6.99');
     y += HR + 10;
-    await addChartToPDF(pdf, 'cPY', M, y, IW, HR, 'Plan Mix by Year');
+    await addChartToPDF(pdf, 'cPY', M, y, IW, 70, 'Plan Mix by Year');
     addFooter(pdf, 3, W, H, M, BRANCH, user.full_name);
 
     // Page 4
