@@ -478,10 +478,10 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     y += HR + 10;
     await addChartToPDF(pdf, 'cPY', M, y, IW, 70, 'Plan Mix by Year', {
       legend: [
-        { label: 'P-IN ≤€6.99', color: '#46286E' },
-        { label: 'P-IN >€6.99', color: '#00D7FF' },
-        { label: 'NEW ≤€6.99', color: '#006AE0' },
-        { label: 'NEW >€6.99', color: '#08DC7D' }
+        { label: 'P-IN less 6.99', color: '#46286E' },
+        { label: 'P-IN Great 6.99', color: '#00D7FF' },
+        { label: 'NEW Less 6.99', color: '#006AE0' },
+        { label: 'NEW Great 6.99', color: '#08DC7D' }
       ],
       subLabels: ['2024', '2025', '2026']
     });
