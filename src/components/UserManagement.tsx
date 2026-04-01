@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase';
 import type { RpaUser } from '@/types';
 import { normalizeBranch, ALL_BRANCHES, NORTH_REGION as NORTH_BRANCHES, SOUTH_REGION as SOUTH_BRANCHES } from '@/data/mockData';
 import {
@@ -166,26 +167,25 @@ export default function UserManagement() {
         setSuccess(`User "${form.full_name}" updated successfully`);
       } else {
         // CREATE new user
-        // Step 1: Create auth user via Supabase Auth
+        // Step 1: Create auth user using a stateless client so the admin session is not affected
         let authUserId: string | null = null;
-        if (form.password) {
-          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-            email: emailNorm,
-            password: form.password,
-            options: {
-              data: { full_name: form.full_name.trim() },
-            },
-          });
-          // signUp with anon key may not fully create the user or may auto-confirm depending on settings
-          // We handle both cases
-          if (signUpErr) {
-            // If user already exists in auth, we'll just create the profile
-            if (!signUpErr.message.includes('already registered')) {
-              throw signUpErr;
-            }
-          } else if (signUpData?.user) {
-            authUserId = signUpData.user.id;
+        const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
+
+        const { data: signUpData, error: signUpErr } = await authClient.auth.signUp({
+          email: emailNorm,
+          password: form.password,
+          options: { data: { full_name: form.full_name.trim() } },
+        });
+
+        if (signUpErr) {
+          const msg = signUpErr.message || '';
+          if (!msg.toLowerCase().includes('already registered')) {
+            throw signUpErr;
           }
+        } else if (signUpData?.user?.id) {
+          authUserId = signUpData.user.id;
         }
 
         // Step 2: Insert rpa_users profile
@@ -203,7 +203,7 @@ export default function UserManagement() {
           });
 
         if (insertErr) throw insertErr;
-        setSuccess(`User "${form.full_name}" created successfully`);
+        setSuccess(`User "${form.full_name}" created successfully. If email confirmation is enabled, the user must verify their email before logging in.`);
       }
 
       setShowModal(false);

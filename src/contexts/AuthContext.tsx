@@ -86,7 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     // Sign in with Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    if (error) return { error: error.message };
+    if (error) {
+      if (error.message === 'Invalid login credentials') {
+        return { error: 'Invalid login credentials. If this user was just created, check the email inbox for a verification/confirmation email, then try again.' };
+      }
+      return { error: error.message };
+    }
 
     // Now fetch user profile
     if (data.user) {
