@@ -118,6 +118,8 @@ function getCaptureRect(el: HTMLElement) {
   return { left, top, width, height };
 }
 
+const yieldToBrowser = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
 async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const svgs = el.querySelectorAll('svg');
   if (svgs.length === 0) return null;
@@ -126,8 +128,10 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  const scale = 2;
   const captureRect = getCaptureRect(el);
+  const pxW = Math.max(600, Math.min(1400, Math.round((el.clientWidth || captureRect.width) * 1.35)));
+  const pxH = Math.max(360, Math.min(1000, Math.round((el.clientHeight || captureRect.height) * 1.35)));
+  const scale = Math.min(2, pxW / captureRect.width, pxH / captureRect.height);
 
   canvas.width = Math.ceil(captureRect.width * scale);
   canvas.height = Math.ceil(captureRect.height * scale);
@@ -202,13 +206,15 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
   if (!el) return;
 
   try {
+    await yieldToBrowser();
     // 1. Try high-res SVG capture
     let url = await fastChartCapture(el);
     
     // 2. Fallback to html2canvas if SVG capture failed
     if (!url) {
+      await yieldToBrowser();
       const canvas = await html2canvas(el, { 
-        scale: 2, 
+        scale: 1.2, 
         useCORS: true, 
         backgroundColor: '#ffffff', 
         logging: false
@@ -249,7 +255,7 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
 
 export async function generatePDF(summary: RetailerSummary, monthly: RetailerMonthly[], user: any, setProgress?: (p: number) => void) {
   try {
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: false });
     const W = 210, H = 297, M = 10, IW = 190;
     const ID = summary.retailer_id;
     const BRANCH = summary.branch;
