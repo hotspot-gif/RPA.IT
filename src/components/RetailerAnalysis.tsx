@@ -531,7 +531,7 @@ export default function RetailerAnalysis({ summary, monthlyData }: Props) {
       </ChartCard>
 
       {/* 11b. GA ACTIVATIONS - FULL TIMELINE BAR CHART */}
-      <ChartCard title="GA Activations - Full Timeline">
+      <ChartCard title="GA Activations - Full Timeline" id="cGT">
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={timeline}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

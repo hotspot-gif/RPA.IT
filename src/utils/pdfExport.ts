@@ -253,6 +253,12 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     const BRANCH = summary.branch;
     const ZONE = summary.zone;
     const INCENTIVE = summary.incentive;
+    const GA = summary.ga_cnt;
+    const PORT_IN = summary.port_in;
+    const PI_RAW = summary.pi_raw;
+    const ADD_GARA = summary.add_gara;
+    const PI_TOTAL = summary.pi_total;
+    const DEDUCTIONS = summary.total_deductions;
 
     const yd = (yr: string) => {
       const mos = monthly.filter(m => m.month.startsWith(yr));
@@ -294,17 +300,63 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
       });
     });
     y += 48;
+
+    y = sectionHeader(pdf, 'ALL-TIME KPI SUMMARY', y, M, IW);
+    const kpis: Array<[string, string, 'B' | 'G' | 'R' | 'D' | 'Y']> = [
+      ['Total Incentive', fe2(INCENTIVE), 'B'],
+      ['Monthly Avg', fe2(INCENTIVE / Math.max(monthly.length, 1)), 'D'],
+      ['GA Activations', fn2(GA), 'D'],
+      ['Port-In Total', fn2(PORT_IN), 'G'],
+      ['PORT IN Inc.', fe2(PI_RAW), 'B'],
+      ['GARA Bonus', fe2(ADD_GARA), 'Y'],
+      ['Total PI Inc.', fe2(PI_TOTAL), 'B'],
+      ['Total Deductions', fe2(DEDUCTIONS), 'R']
+    ];
+    const tw = IW / 4;
+    const th = 12;
+    kpis.forEach((k, idx) => {
+      const row = Math.floor(idx / 4);
+      const col = idx % 4;
+      const kx = M + col * tw;
+      const ky = y + row * (th + 2);
+      sF(255, 255, 255);
+      pdf.setDrawColor(220, 215, 210);
+      pdf.setLineWidth(0.25);
+      pdf.roundedRect(kx, ky, tw - 1.5, th, 1.5, 1.5, 'FD');
+      const ac = k[2] === 'B' ? hR('#006AE0') : k[2] === 'G' ? hR('#08DC7D') : k[2] === 'R' ? hR('#F04438') : k[2] === 'Y' ? [180, 140, 0] : [100, 100, 120];
+      sF(ac[0], ac[1], ac[2]);
+      pdf.roundedRect(kx, ky, tw - 1.5, 2.4, 1.2, 1.2, 'F');
+      tM();
+      pdf.setFontSize(5.4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(k[0], kx + 2, ky + 6);
+      if (k[2] === 'B') tB(); else if (k[2] === 'R') tR(); else if (k[2] === 'G') tG(); else tD();
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(k[1], kx + 2, ky + 11);
+    });
+    y += (th + 2) * 2 + 6;
     const HW = (IW - 3) / 2, HR = 45;
     setProgress?.(25);
     await addChartToPDF(pdf, 'cYB', M, y, HW, HR, 'Annual Incentive YoY');
     await addChartToPDF(pdf, 'cMO', M + HW + 3, y, HW, HR, 'Monthly Incentive Overlay');
     y += HR + 10;
+    y += HR + 10;
     await addChartToPDF(pdf, 'cMF', M, y, IW, 36, 'Full Monthly Incentive Timeline');
     addFooter(pdf, 1, W, H, M, BRANCH, user.full_name);
 
     // Page 2
-    setProgress?.(40);
-    pdf.addPage(); y = await addPageHeader(pdf, 2, 'Plan Activation & Deductions Detail', W, M, ID);
+    setProgress?.(35);
+    pdf.addPage(); y = await addPageHeader(pdf, 2, 'GA Report', W, M, ID);
+    y = sectionHeader(pdf, 'GA REPORT', y, M, IW);
+    await addChartToPDF(pdf, 'cGA', M, y, IW, 120, 'GA Activations - Calendar Overlay');
+    y += 135;
+    await addChartToPDF(pdf, 'cGT', M, y, IW, 90, 'GA Activations - Full Timeline');
+    addFooter(pdf, 2, W, H, M, BRANCH, user.full_name);
+
+    // Page 3
+    setProgress?.(50);
+    pdf.addPage(); y = await addPageHeader(pdf, 3, 'Plan Activation & Deductions Detail', W, M, ID);
     y = sectionHeader(pdf, 'ANNUAL PLAN ACTIVATION', y, M, IW);
     const pC = [M + 1, 30, 53, 76, 99, 120, 140, 161, 183];
     y = tableHeader(pdf, pC, ['Year', 'PI<=6', 'PI>6', 'NP<=6', 'NP>6', 'P-In', 'PI Inc.', 'Gara', 'Total PI'], y, 6, M, IW);
@@ -315,17 +367,16 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
         if (i === 5) tG(); else if (i >= 6) tB(); else tD(); pdf.text(v, pC[i], y + 4.5);
       }); y += 6.5;
     });
-    y += 10; setProgress?.(55);
+    y += 10; setProgress?.(65);
     await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN <=6.99 vs P-IN >6.99');
     await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW <=6.99 vs NEW >6.99');
     y += HR + 10;
-    await addChartToPDF(pdf, 'cPY', M, y, HW, HR, 'Plan Mix by Year');
-    await addChartToPDF(pdf, 'cGA', M + HW + 3, y, HW, HR, 'GA Activations Overlay');
-    addFooter(pdf, 2, W, H, M, BRANCH, user.full_name);
+    await addChartToPDF(pdf, 'cPY', M, y, IW, HR, 'Plan Mix by Year');
+    addFooter(pdf, 3, W, H, M, BRANCH, user.full_name);
 
-    // Page 3
-    setProgress?.(70);
-    pdf.addPage(); y = await addPageHeader(pdf, 3, 'Port-In Monthly Detail', W, M, ID);
+    // Page 4
+    setProgress?.(78);
+    pdf.addPage(); y = await addPageHeader(pdf, 4, 'Port-In Monthly Detail', W, M, ID);
     y = sectionHeader(pdf, 'PORT-IN ACTIVATION & INCENTIVE - MoM', y, M, IW);
     const mC = [M + 1, 18, 27, 40, 53, 66, 77, 88, 110, 135, 160, 185];
     y = tableHeader(pdf, mC, ['Month', 'Yr', 'PI<=6', 'PI>6', 'NP<=6', 'NP>6', 'P-In', 'P-Out', 'PI Inc.', 'Gara', 'Tot PI', '%Tot'], y, 6, M, IW);
@@ -338,21 +389,21 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
         if (i === 6) tG(); else if (i === 7 && mo.port_out > 0) tR(); else if (i === 10) tB(); else tD(); pdf.text(v, mC[i], y + 3.9);
       }); y += 5.5; ri2++;
     });
-    y += 10; setProgress?.(85);
+    y += 10; setProgress?.(88);
     await addChartToPDF(pdf, 'cPII', M, y, HW, HR, 'PI Incentive + Gara Monthly');
     await addChartToPDF(pdf, 'cPF', M + HW + 3, y, HW, HR, 'Port-In vs Port-Out');
     y += HR + 10;
     await addChartToPDF(pdf, 'cPD', M, y, IW, 40, 'Total Port-In Bonus vs Incentive');
-    addFooter(pdf, 3, W, H, M, BRANCH, user.full_name);
+    addFooter(pdf, 4, W, H, M, BRANCH, user.full_name);
 
-    // Page 4
+    // Page 5
     setProgress?.(95);
-    pdf.addPage(); y = await addPageHeader(pdf, 4, 'Deductions & Renewal %', W, M, ID);
+    pdf.addPage(); y = await addPageHeader(pdf, 5, 'Deductions & Renewal %', W, M, ID);
     await addChartToPDF(pdf, 'cDM', M, y, IW, 50, 'Monthly Deductions (Stacked)');
     y += 65;
     await addChartToPDF(pdf, 'cDY', M, y, HW, HR, 'Annual Deductions Breakdown');
     await addChartToPDF(pdf, 'cRN', M + HW + 3, y, HW, HR, 'Renewal Rate Monthly');
-    addFooter(pdf, 4, W, H, M, BRANCH, user.full_name);
+    addFooter(pdf, 5, W, H, M, BRANCH, user.full_name);
 
     setProgress?.(100);
     pdf.save(`Retailer_Report_${ID}.pdf`);
