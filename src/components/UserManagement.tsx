@@ -128,9 +128,11 @@ export default function UserManagement() {
     if (!editingUser && !form.password) return 'Password is required for new users';
     if (form.password && form.password.length < 6) return 'Password must be at least 6 characters';
     // Check uniqueness against existing users (excluding current editing user)
+    const emailNorm = form.email.trim().toLowerCase();
+    const usernameNorm = form.username.trim();
     const dup = users.find(u => u.id !== editingUser?.id &&
-      (u.username === form.username || u.email === form.email));
-    if (dup) return dup.email === form.email ? 'Email already in use' : 'Username already in use';
+      (u.username === usernameNorm || u.email.toLowerCase() === emailNorm));
+    if (dup) return dup.email.toLowerCase() === emailNorm ? 'Email already in use' : 'Username already in use';
     return null;
   };
 
@@ -142,11 +144,12 @@ export default function UserManagement() {
     setError('');
 
     try {
+      const emailNorm = form.email.trim().toLowerCase();
       if (editingUser) {
         // UPDATE existing user
         const updates: Record<string, unknown> = {
           full_name: form.full_name.trim(),
-          email: form.email.trim(),
+          email: emailNorm,
           username: form.username.trim(),
           role: form.role,
           branches: form.branches,
@@ -167,7 +170,7 @@ export default function UserManagement() {
         let authUserId: string | null = null;
         if (form.password) {
           const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-            email: form.email.trim(),
+            email: emailNorm,
             password: form.password,
             options: {
               data: { full_name: form.full_name.trim() },
@@ -191,7 +194,7 @@ export default function UserManagement() {
           .insert({
             auth_user_id: authUserId,
             full_name: form.full_name.trim(),
-            email: form.email.trim(),
+            email: emailNorm,
             username: form.username.trim(),
             role: form.role,
             branches: form.branches,

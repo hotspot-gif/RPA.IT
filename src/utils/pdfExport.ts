@@ -103,7 +103,7 @@ function getCaptureRect(el: HTMLElement) {
   let bottom = Number.NEGATIVE_INFINITY;
 
   svgs.forEach((svg) => {
-    const r = (svg as HTMLElement).getBoundingClientRect();
+    const r = svg.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return;
     left = Math.min(left, r.left);
     top = Math.min(top, r.top);

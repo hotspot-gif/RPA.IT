@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: emailMatch, error: emailErr } = await supabase
         .from('rpa_users')
         .select('*')
-        .eq('email', authUser.email)
+        .ilike('email', authUser.email)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Auto-link the auth_user_id
         await supabase
           .from('rpa_users')
-          .update({ auth_user_id: authUserId })
+          .update({ auth_user_id: authUserId, email: authUser.email.toLowerCase() })
           .eq('id', emailMatch.id);
 
         setUser(emailMatch as RpaUser);
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     // Sign in with Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) return { error: error.message };
 
     // Now fetch user profile
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               auth_user_id: data.user.id,
               username: email.split('@')[0],
               full_name: 'Administrator',
-              email: email,
+              email: email.trim().toLowerCase(),
               role: 'HS-ADMIN',
               branches: allBranches,
               is_active: true,
