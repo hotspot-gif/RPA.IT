@@ -463,13 +463,13 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
       }); y += 6.5;
     });
     y += 10; setProgress?.(65);
-    await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN <=6.99 vs P-IN >6.99', {
+    await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN less 6.99 vs P-IN Great 6.99', {
       legend: [
         { label: 'P-IN ≤€6.99', color: '#46286E' },
         { label: 'P-IN >€6.99', color: '#00D7FF' }
       ]
     });
-    await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW <=6.99 vs NEW >6.99', {
+    await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW Less 6.99 vs NEW Great 6.99', {
       legend: [
         { label: 'NEW ≤€6.99', color: '#006AE0' },
         { label: 'NEW >€6.99', color: '#08DC7D' }

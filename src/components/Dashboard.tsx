@@ -411,15 +411,15 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
         {(view === VIEWS.DASHBOARD || view === VIEWS.KPI) && (
-          <header className="bg-white border-b border-gray-200 px-4 py-3 flex flex-wrap items-center gap-2 md:gap-4 flex-shrink-0">
+          <header className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-4 flex-shrink-0">
             {/* DASHBOARD - Branch selector */}
             {view === VIEWS.DASHBOARD && (
-              <div className="flex flex-1 min-w-[180px] max-w-[220px] items-center gap-2">
+              <div className="w-full md:w-auto flex items-center gap-2">
                 <Shield size={16} className="text-[#21264E]" />
                 <select
                   value={selectedBranch}
                   onChange={e => setSelectedBranch(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                  className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
                 >
                   {branches.map(b => (
                     <option key={b} value={b}>{b}</option>
@@ -468,23 +468,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* DASHBOARD - Zone selector */}
-            {view === VIEWS.DASHBOARD && (
-              <div className="flex items-center gap-2">
-                <Building2 size={16} className="text-[#21264E]" />
-                <select
-                  value={selectedZone}
-                  onChange={e => setSelectedZone(e.target.value)}
-                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
-                >
-                  <option value="">All Zones</option>
-                  {zones.map(z => (
-                    <option key={z} value={z}>{z}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* KPI - Zone selector (independent) */}
             {view === VIEWS.KPI && (
               <div className="flex items-center gap-2">
@@ -504,7 +487,7 @@ export default function Dashboard() {
 
             {/* Retailer selector - only show for DASHBOARD */}
             {view === VIEWS.DASHBOARD && (
-              <div className="relative flex-1 max-w-md">
+              <div className="relative w-full md:flex-1 md:max-w-md">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
@@ -529,7 +512,6 @@ export default function Dashboard() {
                         }`}
                       >
                         <span className="text-[#21264E]">{r.retailer_id}</span>
-                        <span className="text-xs text-gray-400">{r.zone}</span>
                       </button>
                     ))}
                   </div>
@@ -551,7 +533,7 @@ export default function Dashboard() {
               <button
                 onClick={handleExportPDF}
                 disabled={exportingPdf}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 whitespace-nowrap"
+                className="w-full md:w-auto md:ml-auto md:self-auto self-end flex items-center justify-center gap-2 px-4 py-2 bg-[#21264E] hover:bg-[#245bc1] text-white text-sm font-medium rounded-lg transition disabled:opacity-50 whitespace-nowrap"
               >
                 <FileDown size={16} />
                 {exportingPdf ? `Exporting... ${pdfProgress}%` : 'Export PDF'}
