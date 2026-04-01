@@ -426,19 +426,12 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
                 formatter={(value, name, props) => {
-                  const nameMap: { [key: string]: string } = {
-                    ga: 'Actual',
-                    ga_shortfall: 'Shortfall',
-                    ga_over_achievement: 'Over-Achievement',
-                    ga_target: 'Target'
-                  };
-                  
-                  // Use real actual value for the 'Actual' label
-                  if (name === 'ga' && props.payload?.ga_actual !== undefined) {
+                  // Use real actual value for the 'Actual' label in GA chart
+                  if (name === 'Actual' && props.payload?.ga_actual !== undefined) {
                     return [Math.round(props.payload.ga_actual * 100) / 100, 'Actual'];
                   }
                   
-                  return [Math.round(value as number * 100) / 100, nameMap[name] || name];
+                  return [Math.round(value as number * 100) / 100, name];
                 }}
               />
               <Legend formatter={(value) => <span className="font-bold text-[#21264E]">{value}</span>} />
