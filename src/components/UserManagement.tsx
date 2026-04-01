@@ -6,7 +6,7 @@ import type { RpaUser } from '@/types';
 import { normalizeBranch, ALL_BRANCHES, NORTH_REGION as NORTH_BRANCHES, SOUTH_REGION as SOUTH_BRANCHES } from '@/data/mockData';
 import {
   UserPlus, Pencil, Trash2, X, Check, Search, Shield, Building2,
-  Users, AlertTriangle, ChevronDown, Eye, EyeOff, User,
+  Users, AlertTriangle, ChevronDown, Eye, EyeOff, User, Settings, FileDown,
 } from 'lucide-react';
 
 const ROLES: { value: RpaUser['role']; label: string; color: string }[] = [
@@ -43,6 +43,37 @@ export default function UserManagement() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [pdfExportEnabled, setPdfExportEnabled] = useState(true);
+  const [updatingSettings, setUpdatingSettings] = useState(false);
+
+  const fetchSettings = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('pdf_export_enabled')
+      .eq('id', 'global')
+      .single();
+    
+    if (!error && data) {
+      setPdfExportEnabled(data.pdf_export_enabled);
+    }
+  }, []);
+
+  const togglePdfExport = async () => {
+    setUpdatingSettings(true);
+    const newValue = !pdfExportEnabled;
+    const { error } = await supabase
+      .from('system_settings')
+      .update({ pdf_export_enabled: newValue, updated_at: new Date().toISOString() })
+      .eq('id', 'global');
+    
+    if (!error) {
+      setPdfExportEnabled(newValue);
+      setSuccess(`PDF Export feature ${newValue ? 'enabled' : 'disabled'} successfully`);
+    } else {
+      setError('Failed to update system settings');
+    }
+    setUpdatingSettings(false);
+  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -54,7 +85,10 @@ export default function UserManagement() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { 
+    fetchUsers(); 
+    fetchSettings();
+  }, [fetchUsers, fetchSettings]);
 
   // Auto-clear success message
   useEffect(() => {
@@ -302,6 +336,46 @@ export default function UserManagement() {
           <button onClick={() => setError('')} className="ml-auto"><X size={14} /></button>
         </div>
       )}
+
+      {/* System Settings Section */}
+      <div className="mb-8 bg-gradient-to-br from-white to-[#fff7f2] rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-[#21264E]/10 flex items-center justify-center text-[#21264E]">
+            <Settings size={22} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-[#21264E]">System Settings</h2>
+            <p className="text-xs text-gray-500">Global application configurations</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm transition hover:border-[#245bc1]/30">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${pdfExportEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                <FileDown size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#21264E]">PDF Export Feature</p>
+                <p className="text-[10px] text-gray-400">Enable/disable for non-admin users</p>
+              </div>
+            </div>
+            <button
+              onClick={togglePdfExport}
+              disabled={updatingSettings}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#245bc1] focus:ring-offset-2 disabled:opacity-50 ${
+                pdfExportEnabled ? 'bg-[#21264E]' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  pdfExportEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5">

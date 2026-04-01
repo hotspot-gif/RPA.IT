@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [pdfProgress, setPdfProgress] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pdfExportEnabled, setPdfExportEnabled] = useState(true);
 
   // KPI-specific filters (independent from dashboard)
   const [kpiBranch, setKpiBranch] = useState('');
@@ -94,6 +95,18 @@ export default function Dashboard() {
   // Fetch available KPI branches from kpi_data table
   useEffect(() => {
     if (!user) return;
+
+    // Fetch system settings
+    supabase
+      .from('system_settings')
+      .select('pdf_export_enabled')
+      .eq('id', 'global')
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setPdfExportEnabled(data.pdf_export_enabled);
+        }
+      });
     
     supabase
       .from('kpi_data')
@@ -593,8 +606,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* PDF Export - always on the right if in DASHBOARD view */}
-          {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (
+          {/* PDF Export - always on the right if in DASHBOARD view and enabled or user is admin */}
+          {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (pdfExportEnabled || user?.role === 'HS-ADMIN') && (
             <button
               onClick={handleExportPDF}
               disabled={exportingPdf}
