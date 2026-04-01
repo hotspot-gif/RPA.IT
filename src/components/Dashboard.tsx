@@ -427,6 +427,15 @@ export default function Dashboard() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Logo Stripe */}
+        <div className="md:hidden bg-[#21264E] py-2 flex justify-center items-center flex-shrink-0">
+          <img 
+            src="https://cms-assets.ldsvcplatform.com/IT/s3fs-public/inline-images/logo_new1.png" 
+            alt="Lyca Group" 
+            className="h-8 object-contain"
+          />
+        </div>
+
         {/* Top Bar */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row md:flex-wrap md:items-center gap-2 md:gap-4 flex-shrink-0">
           {/* Mobile Sidebar Toggle */}
