@@ -85,10 +85,6 @@ export default function Dashboard() {
           if (availableBranches.length > 0 && !selectedBranch) {
             setSelectedBranch(availableBranches[0]);
           }
-          // Initialize KPI branch to first available
-          if (availableBranches.length > 0 && !kpiBranch) {
-            setKpiBranch(availableBranches[0]);
-          }
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
