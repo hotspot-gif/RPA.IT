@@ -606,8 +606,10 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* PDF Export - always on the right if in DASHBOARD view and enabled or user is admin */}
-          {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && (pdfExportEnabled || user?.role === 'HS-ADMIN') && (
+          {/* PDF Export - always on the right if in DASHBOARD view and enabled both globally and per-user (Admins bypass global but respect their own toggle) */}
+          {view === VIEWS.DASHBOARD && selectedSummary && monthlyData.length > 0 && 
+           (pdfExportEnabled || user?.role === 'HS-ADMIN') && 
+           (user?.pdf_export_enabled !== false) && (
             <button
               onClick={handleExportPDF}
               disabled={exportingPdf}

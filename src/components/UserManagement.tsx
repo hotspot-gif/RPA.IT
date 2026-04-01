@@ -23,6 +23,7 @@ const emptyForm = {
   role: 'ASM' as RpaUser['role'],
   branches: [] as string[],
   is_active: true,
+  pdf_export_enabled: true,
   password: '',
 };
 
@@ -123,6 +124,7 @@ export default function UserManagement() {
       role: u.role,
       branches: u.branches.map(normalizeBranch),
       is_active: u.is_active,
+      pdf_export_enabled: u.pdf_export_enabled ?? true,
       password: '',
     });
     setError('');
@@ -189,6 +191,7 @@ export default function UserManagement() {
           role: form.role,
           branches: form.branches,
           is_active: form.is_active,
+          pdf_export_enabled: form.pdf_export_enabled,
           updated_at: new Date().toISOString(),
         };
 
@@ -233,6 +236,7 @@ export default function UserManagement() {
             role: form.role,
             branches: form.branches,
             is_active: form.is_active,
+            pdf_export_enabled: form.pdf_export_enabled,
             created_by: currentUser?.id || null,
           });
 
@@ -729,28 +733,54 @@ export default function UserManagement() {
                 </p>
               </div>
 
-              {/* Account Status Toggle (HS Admin only, Edit mode only) */}
-              {editingUser && currentUser?.role === 'HS-ADMIN' && (
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <div>
-                    <p className="text-sm font-semibold text-[#21264E]">Account Status</p>
-                    <p className="text-[11px] text-gray-400">Inactive users cannot log in to the system</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, is_active: !p.is_active }))}
-                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
-                      form.is_active ? 'bg-[#08DC7D]' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${
-                        form.is_active ? 'translate-x-6' : 'translate-x-0'
+              {/* Account Settings Toggles */}
+              <div className="space-y-3">
+                {/* Account Status Toggle (HS Admin only, Edit mode only) */}
+                {editingUser && currentUser?.role === 'HS-ADMIN' && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                      <p className="text-sm font-semibold text-[#21264E]">Account Status</p>
+                      <p className="text-[11px] text-gray-400">Inactive users cannot log in to the system</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, is_active: !p.is_active }))}
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                        form.is_active ? 'bg-[#08DC7D]' : 'bg-gray-300'
                       }`}
-                    />
-                  </button>
-                </div>
-              )}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${
+                          form.is_active ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+
+                {/* PDF Export Permission Toggle */}
+                {currentUser?.role === 'HS-ADMIN' && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                      <p className="text-sm font-semibold text-[#21264E]">PDF Export Permission</p>
+                      <p className="text-[11px] text-gray-400">Allow this user to export retailer data as PDF</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, pdf_export_enabled: !p.pdf_export_enabled }))}
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                        form.pdf_export_enabled ? 'bg-[#21264E]' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${
+                          form.pdf_export_enabled ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Branches */}
               <div>

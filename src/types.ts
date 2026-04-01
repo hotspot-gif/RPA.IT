@@ -7,6 +7,7 @@ export interface RpaUser {
   role: 'HS-ADMIN' | 'COUNTRY-MANAGER' | 'RSM' | 'ASM';
   branches: string[];
   is_active: boolean;
+  pdf_export_enabled: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
