@@ -91,31 +91,32 @@ function tableHeader(pdf: jsPDF, cols: number[], hdrs: string[], yp: number, rh:
 }
 
 function getCaptureRect(el: HTMLElement) {
-  const elRect = el.getBoundingClientRect();
-  let left = elRect.left;
-  let top = elRect.top;
-  let right = elRect.right;
-  let bottom = elRect.bottom;
+  const svgs = el.querySelectorAll('svg');
+  if (svgs.length === 0) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: Math.max(1, r.width), height: Math.max(1, r.height) };
+  }
 
-  const parts: Element[] = [
-    ...Array.from(el.querySelectorAll('svg')),
-    ...Array.from(el.querySelectorAll('.recharts-legend-wrapper')),
-    ...Array.from(el.querySelectorAll('.pdf-planmix-legend')),
-    ...Array.from(el.querySelectorAll('.pdf-planmix-year'))
-  ];
+  let left = Number.POSITIVE_INFINITY;
+  let top = Number.POSITIVE_INFINITY;
+  let right = Number.NEGATIVE_INFINITY;
+  let bottom = Number.NEGATIVE_INFINITY;
 
-  for (const p of parts) {
-    const r = (p as HTMLElement).getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) continue;
+  svgs.forEach((svg) => {
+    const r = (svg as HTMLElement).getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
     left = Math.min(left, r.left);
     top = Math.min(top, r.top);
     right = Math.max(right, r.right);
     bottom = Math.max(bottom, r.bottom);
+  });
+
+  if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(right) || !Number.isFinite(bottom)) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: Math.max(1, r.width), height: Math.max(1, r.height) };
   }
 
-  const width = Math.max(1, right - left);
-  const height = Math.max(1, bottom - top);
-  return { left, top, width, height };
+  return { left, top, width: Math.max(1, right - left), height: Math.max(1, bottom - top) };
 }
 
 const yieldToBrowser = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -129,9 +130,9 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
   if (!ctx) return null;
 
   const captureRect = getCaptureRect(el);
-  const pxW = Math.max(600, Math.min(1400, Math.round((el.clientWidth || captureRect.width) * 1.35)));
-  const pxH = Math.max(360, Math.min(1000, Math.round((el.clientHeight || captureRect.height) * 1.35)));
-  const scale = Math.min(2, pxW / captureRect.width, pxH / captureRect.height);
+  const pxW = Math.max(520, Math.min(950, Math.round((captureRect.width) * 1.15)));
+  const pxH = Math.max(320, Math.min(700, Math.round((captureRect.height) * 1.15)));
+  const scale = Math.min(1.5, pxW / captureRect.width, pxH / captureRect.height);
 
   canvas.width = Math.ceil(captureRect.width * scale);
   canvas.height = Math.ceil(captureRect.height * scale);
@@ -165,34 +166,48 @@ async function fastChartCapture(el: HTMLElement): Promise<string | null> {
     });
   }
 
-  const htmlParts = el.querySelectorAll('.recharts-legend-wrapper, .pdf-planmix-legend, .pdf-planmix-year');
-  for (let i = 0; i < htmlParts.length; i++) {
-    const partEl = htmlParts[i] as HTMLElement;
-    const partRect = partEl.getBoundingClientRect();
-    if (partRect.width <= 0 || partRect.height <= 0) continue;
-    try {
-      const partCanvas = await html2canvas(partEl, {
-        scale: 1,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
-        imageTimeout: 800
-      });
-      const x = partRect.left - captureRect.left;
-      const y = partRect.top - captureRect.top;
-      ctx.drawImage(partCanvas, x, y, partRect.width, partRect.height);
-      partCanvas.width = 0;
-      partCanvas.height = 0;
-    } catch {
-    }
-  }
-
   const dataUrl = canvas.toDataURL('image/png');
   canvas.width = 0; canvas.height = 0;
   return dataUrl;
 }
 
-async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw: number, ch: number, title: string) {
+type LegendItem = { label: string; color: string };
+
+function drawLegend(pdf: jsPDF, x: number, y: number, maxW: number, items: LegendItem[]) {
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(33, 38, 78);
+
+  let cx = x;
+  let cy = y;
+  const rowH = 3.4;
+
+  for (const it of items) {
+    const w = pdf.getTextWidth(it.label) + 8.5;
+    if (cx + w > x + maxW) {
+      cx = x;
+      cy += rowH;
+    }
+    const rgb = hR(it.color);
+    pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+    pdf.circle(cx + 1.4, cy - 0.8, 0.8, 'F');
+    pdf.text(it.label, cx + 3, cy);
+    cx += w;
+  }
+
+  return cy;
+}
+
+async function addChartToPDF(
+  pdf: jsPDF,
+  cid: string,
+  x: number,
+  yp: number,
+  cw: number,
+  ch: number,
+  title: string,
+  opts?: { legend?: LegendItem[]; subLabels?: string[] }
+) {
   const el = document.getElementById(cid);
   pdf.setFillColor(250, 248, 245);
   pdf.setDrawColor(220, 215, 210);
@@ -224,6 +239,27 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
     }
 
     if (url) {
+      const legend = opts?.legend ?? [];
+      const subLabels = opts?.subLabels ?? [];
+      const legendRows = legend.length > 0 ? 1 : 0;
+      const subLabelRows = subLabels.length > 0 ? 1 : 0;
+      const extraTop = (legendRows + subLabelRows) * 4;
+
+      if (legend.length > 0) {
+        drawLegend(pdf, x + 2, yp + 8, cw - 4, legend);
+      }
+
+      if (subLabels.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(6.2);
+        pdf.setTextColor(33, 38, 78);
+        const startY = yp + 8 + (legend.length > 0 ? 4 : 0);
+        const colW = (cw - 4) / subLabels.length;
+        subLabels.forEach((lbl, i) => {
+          pdf.text(lbl, x + 2 + colW * (i + 0.5), startY, { align: 'center' });
+        });
+      }
+
       // Calculate aspect ratio to prevent stretching
       const captureRect = getCaptureRect(el);
       const aspectRatio = captureRect.width / captureRect.height;
@@ -237,16 +273,18 @@ async function addChartToPDF(pdf: jsPDF, cid: string, x: number, yp: number, cw:
       let finalW = displayW;
       let finalH = displayH;
       
-      if (finalH > ch) {
-        finalH = ch;
+      const maxImageH = Math.max(10, ch - extraTop);
+      if (finalH > maxImageH) {
+        finalH = maxImageH;
         finalW = finalH * aspectRatio;
       }
 
       // Center the image in the box
       const offsetX = (cw - 2 - finalW) / 2;
-      const offsetY = (ch - finalH) / 2;
+      const offsetY = ((ch - extraTop) - finalH) / 2;
 
-      pdf.addImage(url, 'PNG', x + 1 + offsetX, yp + 6 + offsetY, finalW, finalH, undefined, 'FAST');
+      const imageTop = yp + 6 + extraTop;
+      pdf.addImage(url, 'PNG', x + 1 + offsetX, imageTop + offsetY, finalW, finalH, undefined, 'FAST');
     }
   } catch (e) {
     console.warn('Capture fail', cid, e);
@@ -347,7 +385,13 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
     const HW = (IW - 3) / 2, HR = 45;
     setProgress?.(25);
     await addChartToPDF(pdf, 'cYB', M, y, HW, HR, 'Annual Incentive YoY');
-    await addChartToPDF(pdf, 'cMO', M + HW + 3, y, HW, HR, 'Monthly Incentive Overlay');
+    await addChartToPDF(pdf, 'cMO', M + HW + 3, y, HW, HR, 'Monthly Incentive Overlay', {
+      legend: [
+        { label: '2024', color: '#006AE0' },
+        { label: '2025', color: '#08DC7D' },
+        { label: '2026', color: '#FFD54F' }
+      ]
+    });
     y += HR + 10;
     await addChartToPDF(pdf, 'cMF', M, y, IW, 36, 'Full Monthly Incentive Timeline');
     addFooter(pdf, 1, W, H, M, BRANCH, user.full_name);
@@ -394,7 +438,13 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
 
     y += gaTileH + 6;
 
-    await addChartToPDF(pdf, 'cGAC', M, y, IW, 110, 'GA Activations - Calendar Overlay');
+    await addChartToPDF(pdf, 'cGAC', M, y, IW, 110, 'GA Activations - Calendar Overlay', {
+      legend: [
+        { label: '2024', color: '#006AE0' },
+        { label: '2025', color: '#08DC7D' },
+        { label: '2026', color: '#FFD54F' }
+      ]
+    });
     y += 125;
     await addChartToPDF(pdf, 'cGT', M, y, IW, 85, 'GA Activations - Full Timeline');
     addFooter(pdf, 2, W, H, M, BRANCH, user.full_name);
@@ -413,10 +463,28 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
       }); y += 6.5;
     });
     y += 10; setProgress?.(65);
-    await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN <=6.99 vs P-IN >6.99');
-    await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW <=6.99 vs NEW >6.99');
+    await addChartToPDF(pdf, 'cPI', M, y, HW, HR, 'P-IN <=6.99 vs P-IN >6.99', {
+      legend: [
+        { label: 'P-IN ≤€6.99', color: '#46286E' },
+        { label: 'P-IN >€6.99', color: '#00D7FF' }
+      ]
+    });
+    await addChartToPDF(pdf, 'cNP', M + HW + 3, y, HW, HR, 'NEW <=6.99 vs NEW >6.99', {
+      legend: [
+        { label: 'NEW ≤€6.99', color: '#006AE0' },
+        { label: 'NEW >€6.99', color: '#08DC7D' }
+      ]
+    });
     y += HR + 10;
-    await addChartToPDF(pdf, 'cPY', M, y, IW, 70, 'Plan Mix by Year');
+    await addChartToPDF(pdf, 'cPY', M, y, IW, 70, 'Plan Mix by Year', {
+      legend: [
+        { label: 'P-IN ≤€6.99', color: '#46286E' },
+        { label: 'P-IN >€6.99', color: '#00D7FF' },
+        { label: 'NEW ≤€6.99', color: '#006AE0' },
+        { label: 'NEW >€6.99', color: '#08DC7D' }
+      ],
+      subLabels: ['2024', '2025', '2026']
+    });
     addFooter(pdf, 3, W, H, M, BRANCH, user.full_name);
 
     // Page 4
@@ -435,18 +503,45 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
       }); y += 5.5; ri2++;
     });
     y += 10; setProgress?.(88);
-    await addChartToPDF(pdf, 'cPII', M, y, HW, HR, 'PI Incentive + Gara Monthly');
-    await addChartToPDF(pdf, 'cPF', M + HW + 3, y, HW, HR, 'Port-In vs Port-Out');
+    await addChartToPDF(pdf, 'cPII', M, y, HW, HR, 'PI Incentive + Gara Monthly', {
+      legend: [
+        { label: 'Port in Incentive', color: '#FFC8B2' },
+        { label: 'Gara bonus', color: '#FFD54F' }
+      ]
+    });
+    await addChartToPDF(pdf, 'cPF', M + HW + 3, y, HW, HR, 'Port-In vs Port-Out', {
+      legend: [
+        { label: 'Port-In', color: '#08DC7D' },
+        { label: 'Port-Out', color: '#F04438' }
+      ]
+    });
     y += HR + 10;
-    await addChartToPDF(pdf, 'cPD', M, y, IW, 40, 'Total Port-In Bonus vs Incentive');
+    await addChartToPDF(pdf, 'cPD', M, y, IW, 40, 'Total Port-In Bonus vs Incentive', {
+      legend: [
+        { label: 'Total Port-In Bonus', color: '#006AE0' },
+        { label: 'Total Incentive Paid', color: '#08DC7D' }
+      ]
+    });
     addFooter(pdf, 4, W, H, M, BRANCH, user.full_name);
 
     // Page 5
     setProgress?.(95);
     pdf.addPage(); y = await addPageHeader(pdf, 5, 'Deductions & Renewal %', W, M, ID);
-    await addChartToPDF(pdf, 'cDM', M, y, IW, 50, 'Monthly Deductions (Stacked)');
+    await addChartToPDF(pdf, 'cDM', M, y, IW, 50, 'Monthly Deductions (Stacked)', {
+      legend: [
+        { label: 'PO Deduction', color: '#F04438' },
+        { label: 'Clawback', color: '#D32F2F' },
+        { label: 'Renewal Impact', color: '#B71C1C' }
+      ]
+    });
     y += 65;
-    await addChartToPDF(pdf, 'cDY', M, y, HW, HR, 'Annual Deductions Breakdown');
+    await addChartToPDF(pdf, 'cDY', M, y, HW, HR, 'Annual Deductions Breakdown', {
+      legend: [
+        { label: 'PO Deduction', color: '#F04438' },
+        { label: 'Clawback', color: '#D32F2F' },
+        { label: 'Renewal Impact', color: '#B71C1C' }
+      ]
+    });
     await addChartToPDF(pdf, 'cRN', M + HW + 3, y, HW, HR, 'Renewal Rate Monthly');
     addFooter(pdf, 5, W, H, M, BRANCH, user.full_name);
 
