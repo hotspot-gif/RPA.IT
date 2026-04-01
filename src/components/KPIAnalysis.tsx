@@ -15,11 +15,17 @@ interface KPIAnalysisProps {
 interface ChartData {
   month: string;
   ga: number;
+  ga_actual: number;
   ga_target: number;
+  ga_shortfall: number;
+  ga_over_achievement: number;
   uao: number;
   uao_target: number;
   na: number;
+  na_actual: number;
   na_target: number;
+  na_shortfall: number;
+  na_over_achievement: number;
 }
 
 interface KPIMetrics {
@@ -188,9 +194,15 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
         // Blue bar = Actual - Over-Achievement (shows base portion in stack)
         const gaBaseActual = item.ga - gaOverAchievement;
 
+        // Same for NA
+        const naOverAchievement = item.na > item.na_target ? item.na - item.na_target : 0;
+        const naShortfall = item.na < item.na_target ? item.na_target - item.na : 0;
+        const naBaseActual = item.na - naOverAchievement;
+
         return {
           month: new Date(`${item.month}-01`).toLocaleDateString('en-US', { month: 'short' }),
           ga: gaBaseActual,
+          ga_actual: item.ga, // Real GA value for label
           ga_target: item.ga_target,
           ga_shortfall: gaShortfall,
           ga_over_achievement: gaOverAchievement,
@@ -198,8 +210,11 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
           uao: item.uao,
           uao_target: item.uao_target,
           uao_completion: item.uao_target > 0 ? (item.uao / item.uao_target) * 100 : 0,
-          na: item.na,
+          na: naBaseActual,
+          na_actual: item.na, // Real NA value for label
           na_target: item.na_target,
+          na_shortfall: naShortfall,
+          na_over_achievement: naOverAchievement,
           na_completion: item.na_target > 0 ? (item.na / item.na_target) * 100 : 0,
         };
       });
@@ -244,11 +259,17 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
         const prevYearData = Array.from(prevMonthlyAggregation.values()).map(item => ({
           month: new Date(`${item.month}-01`).toLocaleDateString('en-US', { month: 'short' }),
           ga: item.ga,
+          ga_actual: item.ga,
           ga_target: item.ga_target,
+          ga_shortfall: 0,
+          ga_over_achievement: 0,
           uao: item.uao,
           uao_target: item.uao_target,
           na: item.na,
+          na_actual: item.na,
           na_target: item.na_target,
+          na_shortfall: 0,
+          na_over_achievement: 0,
         }));
 
         setPreviousYearData(prevYearData);
@@ -422,13 +443,19 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                 }}
                 itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
                 labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
-                formatter={(value, name) => {
+                formatter={(value, name, props) => {
                   const nameMap: { [key: string]: string } = {
                     ga: 'Actual',
                     ga_shortfall: 'Shortfall',
                     ga_over_achievement: 'Over-Achievement',
                     ga_target: 'Target'
                   };
+                  
+                  // Use real actual value for the 'Actual' label
+                  if (name === 'ga' && props.payload?.ga_actual !== undefined) {
+                    return [Math.round(props.payload.ga_actual * 100) / 100, 'Actual'];
+                  }
+                  
                   return [Math.round(value as number * 100) / 100, nameMap[name] || name];
                 }}
               />
@@ -532,15 +559,21 @@ export default function KPIAnalysis({ branch, zone, region }: KPIAnalysisProps) 
                   }}
                   itemStyle={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}
                   labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}
-                  formatter={(value, name) => {
-                    const nameMap: { [key: string]: string } = {
-                      na: 'Actual',
-                      na_shortfall: 'Shortfall',
-                      na_over_achievement: 'Over-Achievement',
-                      na_target: 'Target'
-                    };
-                    return [Math.round(value as number * 100) / 100, nameMap[name] || name];
-                  }}
+                  formatter={(value, name, props) => {
+                  const nameMap: { [key: string]: string } = {
+                    na: 'Actual',
+                    na_shortfall: 'Shortfall',
+                    na_over_achievement: 'Over-Achievement',
+                    na_target: 'Target'
+                  };
+                  
+                  // Use real actual value for the 'Actual' label
+                  if (name === 'na' && props.payload?.na_actual !== undefined) {
+                    return [Math.round(props.payload.na_actual * 100) / 100, 'Actual'];
+                  }
+                  
+                  return [Math.round(value as number * 100) / 100, nameMap[name] || name];
+                }}
                 />
                 <Legend formatter={(value) => <span className="font-bold text-[#21264E]">{value}</span>} />
                 <Bar dataKey="na" fill="#46286E" name="Actual" stackId="a" radius={[4, 4, 0, 0]} />
