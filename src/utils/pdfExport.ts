@@ -206,7 +206,7 @@ async function addChartToPDF(
   cw: number,
   ch: number,
   title: string,
-  opts?: { legend?: LegendItem[]; subLabels?: string[] }
+  opts?: { legend?: LegendItem[]; subLabels?: string[]; alignY?: 'top' | 'center' }
 ) {
   const el = document.getElementById(cid);
   pdf.setFillColor(250, 248, 245);
@@ -281,7 +281,7 @@ async function addChartToPDF(
 
       // Center the image in the box
       const offsetX = (cw - 2 - finalW) / 2;
-      const offsetY = ((ch - extraTop) - finalH) / 2;
+      const offsetY = opts?.alignY === 'top' ? 0 : ((ch - extraTop) - finalH) / 2;
 
       const imageTop = yp + 6 + extraTop;
       pdf.addImage(url, 'PNG', x + 1 + offsetX, imageTop + offsetY, finalW, finalH, undefined, 'FAST');
@@ -393,7 +393,7 @@ export async function generatePDF(summary: RetailerSummary, monthly: RetailerMon
       ]
     });
     y += HR + 10;
-    await addChartToPDF(pdf, 'cMF', M, y, IW, 36, 'Full Monthly Incentive Timeline');
+    await addChartToPDF(pdf, 'cMF', M, y, IW, 70, 'Full Monthly Incentive Timeline', { alignY: 'top' });
     addFooter(pdf, 1, W, H, M, BRANCH, user.full_name);
 
     // Page 2
