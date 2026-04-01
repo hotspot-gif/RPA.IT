@@ -468,6 +468,23 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* DASHBOARD - Zone selector */}
+            {view === VIEWS.DASHBOARD && (
+              <div className="w-full md:w-auto flex items-center gap-2">
+                <Building2 size={16} className="text-[#21264E]" />
+                <select
+                  value={selectedZone}
+                  onChange={e => setSelectedZone(e.target.value)}
+                  className="w-full md:w-auto text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-[#21264E] focus:ring-2 focus:ring-[#245bc1] outline-none"
+                >
+                  <option value="">All Zones</option>
+                  {zones.map(z => (
+                    <option key={z} value={z}>{z}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* KPI - Zone selector (independent) */}
             {view === VIEWS.KPI && (
               <div className="flex items-center gap-2">
