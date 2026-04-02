@@ -6,9 +6,10 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const YEAR_COLORS: Record<string, string> = {
   '2024': '#245bc1',
-  '2025': '#08DC7D',
-  '2026': '#FFD54F',
-  '2023': '#F04438'
+  '2025': '#08dc7d',
+  '2026': '#FFDD64',
+  '2023': '#ffc8b2',
+  '2022': '#46286E'
 };
 
 interface TopRetailersViewProps {
@@ -248,7 +249,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
     return retailers.length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);
 
-  const COLORS = ['#006AE0', '#08DC7D', '#FFC8B2', '#FFD54F', '#00D7FF'];
+  const COLORS = ['#245bc1', '#08dc7d', '#ffc8b2', '#FFDD64', '#00D7FF', '#46286E'];
 
   const StatCard = ({ 
     icon: Icon, 
@@ -442,7 +443,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
                 <Tooltip content={<FullRetailerTooltip />} cursor={{ fill: '#f3f4f6' }} />
                 <Bar dataKey="value" fill="#245bc1" radius={[4, 4, 0, 0]} barSize={30}>
                   {gaChartData.map((entry, idx) => (
-                    <Cell key={`cell-ga-${idx}`} fill={idx === 0 ? '#245bc1' : '#06b6d4'} />
+                    <Cell key={`cell-ga-${idx}`} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -470,7 +471,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
                 />
                 <YAxis fontSize={10} tick={{ fill: '#6b7280' }} />
                 <Tooltip content={<FullRetailerTooltip />} />
-                <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={3} dot={{ fill: '#06b6d4', r: 5, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
+                <Line type="monotone" dataKey="value" stroke="#00D7FF" strokeWidth={3} dot={{ fill: '#00D7FF', r: 5, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -527,7 +528,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
                 />
                 <YAxis fontSize={10} tick={{ fill: '#6b7280' }} label={{ value: '%', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280', fontSize: 10 } }} />
                 <Tooltip content={<FullRetailerTooltip />} cursor={{ fill: '#f3f4f6' }} />
-                <Bar dataKey="value" fill="#06b6d4" radius={[4, 4, 0, 0]} barSize={30} unit="%" />
+                <Bar dataKey="value" fill="#08dc7d" radius={[4, 4, 0, 0]} barSize={30} unit="%" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
