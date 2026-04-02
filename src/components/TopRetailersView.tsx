@@ -303,23 +303,6 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#21264E] mb-2">Retailer Performance Overview</h1>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-          <p className="text-gray-600">Branch: <span className="font-semibold text-[#21264E]">{branch}</span></p>
-          <div className="flex gap-4 text-sm flex-wrap">
-            <div>
-              <span className="text-gray-600">{selectedZone ? 'Zone' : 'Branch'} Retailers: </span>
-              <span className="font-semibold text-[#245bc1]">{displayedRetailersCount}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Total GA: </span>
-              <span className="font-semibold text-[#245bc1]">{totalGA.toLocaleString('en-IE')}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Total Incentive: </span>
-              <span className="font-semibold text-[#245bc1]">€{totalIncentive.toLocaleString('en-IE', { maximumFractionDigits: 0 })}</span>
-            </div>
-          </div>
-        </div>
 
         {yearlyAnalysis.length > 0 && (
           <div className="mt-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
