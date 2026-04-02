@@ -90,11 +90,16 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   // If yearlyZoneData is provided, use it for monthly aggregation as it's pre-calculated/complete
   const aggregatedMonthly = useMemo(() => {
     if (yearlyZoneData && yearlyZoneData.length > 0) {
-      return [...yearlyZoneData].sort((a, b) => a.month.localeCompare(b.month)).map(r => ({
-        month: r.month,
-        ga_cnt: val(r, ['ga_cnt', 'ga', 'total_ga']),
-        port_in: val(r, ['port_in', 'total_port_in', 'pi']),
-      }));
+      // Group by month and sum values across all zones
+      const grouped = yearlyZoneData.reduce((acc, r) => {
+        const m = r.month;
+        if (!acc[m]) acc[m] = { month: m, ga_cnt: 0, port_in: 0 };
+        acc[m].ga_cnt += val(r, ['ga_cnt', 'ga', 'total_ga']);
+        acc[m].port_in += val(r, ['port_in', 'total_port_in', 'pi']);
+        return acc;
+      }, {} as Record<string, { month: string; ga_cnt: number; port_in: number }>);
+
+      return Object.values(grouped).sort((a, b) => a.month.localeCompare(b.month));
     }
     
     // Fallback to manual aggregation if new table is not available
@@ -147,12 +152,11 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const activeRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
       // Find the latest month in the aggregated data
-      // First, ensure we have a valid list of months
-      const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => b.localeCompare(a));
+      const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => a.localeCompare(b));
       
       if (availableMonths.length === 0) return 0;
       
-      const latestMonth = availableMonths[0];
+      const latestMonth = availableMonths[availableMonths.length - 1];
       
       // Sum the retailer count for all rows in that specific latest month, excluding shop closed
       const count = yearlyZoneData
@@ -167,10 +171,10 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const displayedRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
        // Total retailers in the latest month (including all zones)
-       const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => b.localeCompare(a));
+       const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => a.localeCompare(b));
        if (availableMonths.length === 0) return 0;
        
-       const latestMonth = availableMonths[0];
+       const latestMonth = availableMonths[availableMonths.length - 1];
        return yearlyZoneData
         .filter(r => r.month === latestMonth)
         .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers', 'count', 'retailers', 'retailer_cnt']), 0);
