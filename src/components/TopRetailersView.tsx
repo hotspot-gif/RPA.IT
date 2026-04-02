@@ -79,10 +79,22 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const filteredRetailers = selectedZone ? retailers.filter(r => r.zone === selectedZone) : retailers;
   const zoneRetailerIds = new Set(filteredRetailers.map(r => r.retailer_id));
 
+  // Robust helper to extract values with multiple possible column names
+  const val = (r: any, keys: string[]) => {
+    for (const key of keys) {
+      if (r[key] !== undefined && r[key] !== null) return Number(r[key]);
+    }
+    return 0;
+  };
+
   // If yearlyZoneData is provided, use it for monthly aggregation as it's pre-calculated/complete
   const aggregatedMonthly = useMemo(() => {
     if (yearlyZoneData && yearlyZoneData.length > 0) {
-      return [...yearlyZoneData].sort((a, b) => a.month.localeCompare(b.month));
+      return [...yearlyZoneData].sort((a, b) => a.month.localeCompare(b.month)).map(r => ({
+        month: r.month,
+        ga_cnt: val(r, ['ga_cnt', 'ga', 'total_ga']),
+        port_in: val(r, ['port_in', 'total_port_in', 'pi']),
+      }));
     }
     
     // Fallback to manual aggregation if new table is not available
@@ -112,23 +124,23 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const hasAggregatedData = yearlyZoneData && yearlyZoneData.length > 0;
   
   const totalGA = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.ga_cnt) || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + val(r, ['ga_cnt', 'ga', 'total_ga']), 0)
     : retailers.reduce((sum, r) => sum + r.ga_cnt, 0);
 
   const totalIncentive = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.incentive) || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + val(r, ['incentive', 'total_incentive', 'inc']), 0)
     : retailers.reduce((sum, r) => sum + r.incentive, 0);
 
   const totalPortIn = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.port_in) || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + val(r, ['port_in', 'total_port_in', 'pi']), 0)
     : retailers.reduce((sum, r) => sum + r.port_in, 0);
 
   const totalDeductions = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.total_deductions) || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + val(r, ['total_deductions', 'total_ded', 'deductions']), 0)
     : retailers.reduce((sum, r) => sum + r.total_deductions, 0);
 
   const avgRenewalRate = hasAggregatedData
-    ? (yearlyZoneData.reduce((sum, r) => sum + (Number(r.renewal_rate) || 0), 0) / yearlyZoneData.length)
+    ? (yearlyZoneData.reduce((sum, r) => sum + val(r, ['renewal_rate', 'avg_renewal_rate', 'rr']), 0) / yearlyZoneData.length)
     : (retailers.length > 0 ? retailers.reduce((sum, r) => sum + r.renewal_rate, 0) / retailers.length : 0);
 
   // Active Retailers count should come from the latest month's aggregated data
@@ -139,7 +151,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
       // Sum the retailer_count for all zones in that month
       return yearlyZoneData
         .filter(r => r.month === latestMonth)
-        .reduce((sum, r) => sum + (Number(r.retailer_count) || 0), 0);
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'count']), 0);
     }
     return retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);
@@ -150,7 +162,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
        const latestMonth = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month))[0].month;
        return yearlyZoneData
         .filter(r => r.month === latestMonth)
-        .reduce((sum, r) => sum + (Number(r.retailer_count) || 0), 0);
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers']), 0);
     }
     return retailers.length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);

@@ -279,11 +279,20 @@ export default function Dashboard() {
     });
 
     // Fetch from new aggregated table (more reliable for sums/averages)
-    const aggregatedQuery = supabase.from('monthly_zone_sum').select('*').eq('branch', selectedBranch);
+    // Try both with and without LMIT-HS- prefix to handle potential naming inconsistencies
+    const branchShort = selectedBranch.replace('LMIT-HS-', '');
+    const aggregatedQuery = supabase
+      .from('monthly_zone_sum')
+      .select('*')
+      .or(`branch.eq."${selectedBranch}",branch.eq."${branchShort}",branch.ilike."%${branchShort}%"`);
+    
     if (selectedZone) aggregatedQuery.eq('zone', selectedZone);
+    
     aggregatedQuery.order('month').limit(5000).then(({ data, error }: { data: any; error: any }) => {
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         setYearlyZoneData(data);
+      } else if (error) {
+        console.error('Error fetching monthly_zone_sum:', error);
       }
     });
   }, [selectedBranch, selectedZone]);
