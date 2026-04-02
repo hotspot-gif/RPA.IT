@@ -66,20 +66,28 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
     .sort((a, b) => b.renewal_rate - a.renewal_rate)
     .slice(0, 5);
 
-  // Chart data
-  const gaChartData = topByGA.map(r => ({ id: r.retailer_id, name: r.retailer_id.slice(-4), value: r.ga_cnt, zone: r.zone }));
-  const portInChartData = topByPortIn.map(r => ({ id: r.retailer_id, name: r.retailer_id.slice(-4), value: r.port_in, zone: r.zone }));
-  const incentiveChartData = topByIncentive.map(r => ({ id: r.retailer_id, name: r.retailer_id.slice(-4), value: Math.round(r.incentive), zone: r.zone }));
-  const renewalChartData = topByRenewalRate.map(r => ({ id: r.retailer_id, name: r.retailer_id.slice(-4), value: parseFloat(r.renewal_rate.toFixed(1)), zone: r.zone }));
+  // Chart data - use full retailer_id for name to avoid incomplete labels
+  const gaChartData = topByGA.map(r => ({ name: r.retailer_id, value: r.ga_cnt, zone: r.zone }));
+  const portInChartData = topByPortIn.map(r => ({ name: r.retailer_id, value: r.port_in, zone: r.zone }));
+  const incentiveChartData = topByIncentive.map(r => ({ name: r.retailer_id, value: Math.round(r.incentive), zone: r.zone }));
+  const renewalChartData = topByRenewalRate.map(r => ({ name: r.retailer_id, value: parseFloat(r.renewal_rate.toFixed(1)), zone: r.zone }));
 
-  const fullRetailerTooltip = ({ active, payload, label }: any) => {
+  const FullRetailerTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const point = payload[0].payload;
+    const data = payload[0].payload;
     return (
-      <div className="bg-white border border-gray-200 text-xs p-2 rounded shadow">
-        <p className="font-semibold text-[#21264E]">{point.id}</p>
-        <p>{label}</p>
-        <p>{payload[0].name}: {payload[0].value?.toLocaleString('en-IE')}</p>
+      <div className="bg-[#21264E] text-white text-[10px] p-2 rounded shadow-lg border border-white/10 min-w-[120px]">
+        <p className="font-bold border-b border-white/10 pb-1 mb-1">{data.name}</p>
+        <div className="flex justify-between gap-4">
+          <span className="opacity-70">Zone:</span>
+          <span>{data.zone}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="opacity-70">Value:</span>
+          <span className="font-bold text-[#08DC7D]">
+            {payload[0].value?.toLocaleString('en-IE')}{label?.includes('%') || payload[0].unit === '%' ? '%' : ''}
+          </span>
+        </div>
       </div>
     );
   };
@@ -423,11 +431,16 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           {gaChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={gaChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip content={<fullRetailerTooltip />} />
-                <Bar dataKey="value" fill="#245bc1" radius={[8, 8, 0, 0]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  fontSize={10} 
+                  tick={{ fill: '#6b7280' }}
+                  tickFormatter={(value) => value.length > 8 ? `...${value.slice(-6)}` : value}
+                />
+                <YAxis fontSize={10} tick={{ fill: '#6b7280' }} />
+                <Tooltip content={<FullRetailerTooltip />} cursor={{ fill: '#f3f4f6' }} />
+                <Bar dataKey="value" fill="#245bc1" radius={[4, 4, 0, 0]} barSize={30}>
                   {gaChartData.map((entry, idx) => (
                     <Cell key={`cell-ga-${idx}`} fill={idx === 0 ? '#245bc1' : '#06b6d4'} />
                   ))}
@@ -448,11 +461,16 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           {portInChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={portInChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip content={<fullRetailerTooltip />} />
-                <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4', r: 4 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  fontSize={10} 
+                  tick={{ fill: '#6b7280' }}
+                  tickFormatter={(value) => value.length > 8 ? `...${value.slice(-6)}` : value}
+                />
+                <YAxis fontSize={10} tick={{ fill: '#6b7280' }} />
+                <Tooltip content={<FullRetailerTooltip />} />
+                <Line type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={3} dot={{ fill: '#06b6d4', r: 5, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -474,7 +492,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, value }) => `${name}: €${value.toLocaleString('en-IE')}`}
+                  label={({ name, value }) => `${name.length > 8 ? `...${name.slice(-6)}` : name}: €${value.toLocaleString('en-IE')}`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -483,7 +501,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip content={<fullRetailerTooltip />} />
+                <Tooltip content={<FullRetailerTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -500,11 +518,16 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           {renewalChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={renewalChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} label={{ value: '%', angle: -90, position: 'insideLeft' }} />
-                <Tooltip content={<fullRetailerTooltip />} />
-                <Bar dataKey="value" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  fontSize={10} 
+                  tick={{ fill: '#6b7280' }}
+                  tickFormatter={(value) => value.length > 8 ? `...${value.slice(-6)}` : value}
+                />
+                <YAxis fontSize={10} tick={{ fill: '#6b7280' }} label={{ value: '%', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6b7280', fontSize: 10 } }} />
+                <Tooltip content={<FullRetailerTooltip />} cursor={{ fill: '#f3f4f6' }} />
+                <Bar dataKey="value" fill="#06b6d4" radius={[4, 4, 0, 0]} barSize={30} unit="%" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
