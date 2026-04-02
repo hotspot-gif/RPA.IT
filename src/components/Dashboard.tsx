@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [retailerSearch, setRetailerSearch] = useState('');
   const [monthlyData, setMonthlyData] = useState<RetailerMonthly[]>([]);
   const [branchMonthlyData, setBranchMonthlyData] = useState<RetailerMonthly[]>([]);
+  const [yearlyZoneData, setYearlyZoneData] = useState<any[]>([]);
   const [loadingRetailers, setLoadingRetailers] = useState(false);
   const [loadingMonthly, setLoadingMonthly] = useState(false);
   const [showRetailerDropdown, setShowRetailerDropdown] = useState(false);
@@ -264,14 +265,26 @@ export default function Dashboard() {
 
   // Fetch branch-level monthly data when branch or zone changes
   useEffect(() => {
-    if (!selectedBranch) { setBranchMonthlyData([]); return; }
+    if (!selectedBranch) { 
+      setBranchMonthlyData([]); 
+      setYearlyZoneData([]);
+      return; 
+    }
 
+    // Fetch from original table (limited rows)
     const query = supabase.from('retailer_monthly').select('*').eq('branch', selectedBranch);
     if (selectedZone) query.eq('zone', selectedZone);
-
-    // Fetch up to 100000 monthly records to ensure all historical data is captured
     query.order('month').limit(100000).then(({ data, error }: { data: any; error: any }) => {
       if (!error && data) setBranchMonthlyData(data as RetailerMonthly[]);
+    });
+
+    // Fetch from new aggregated table (more reliable for sums/averages)
+    const aggregatedQuery = supabase.from('yearly_zone_sum').select('*').eq('branch', selectedBranch);
+    if (selectedZone) aggregatedQuery.eq('zone', selectedZone);
+    aggregatedQuery.order('month').then(({ data, error }: { data: any; error: any }) => {
+      if (!error && data) {
+        setYearlyZoneData(data);
+      }
     });
   }, [selectedBranch, selectedZone]);
 
@@ -626,6 +639,7 @@ export default function Dashboard() {
               branch={selectedBranch}
               loading={loadingRetailers}
               branchMonthlyData={branchMonthlyData}
+              yearlyZoneData={yearlyZoneData}
               selectedZone={selectedZone}
             />
           ) : loadingMonthly ? (

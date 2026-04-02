@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { RetailerSummary, RetailerMonthly } from '@/types';
 import { TrendingUp, DollarSign, PhoneForwarded, Activity } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -7,10 +8,11 @@ interface TopRetailersViewProps {
   branch: string;
   loading: boolean;
   branchMonthlyData?: RetailerMonthly[];
+  yearlyZoneData?: any[];
   selectedZone?: string;
 }
 
-export default function TopRetailersView({ retailers, branch, loading, branchMonthlyData, selectedZone }: TopRetailersViewProps) {
+export default function TopRetailersView({ retailers, branch, loading, branchMonthlyData, yearlyZoneData, selectedZone }: TopRetailersViewProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -77,18 +79,27 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const filteredRetailers = selectedZone ? retailers.filter(r => r.zone === selectedZone) : retailers;
   const zoneRetailerIds = new Set(filteredRetailers.map(r => r.retailer_id));
 
-  const branchMonthly = (branchMonthlyData || [])
-    .filter(m => !selectedZone || zoneRetailerIds.has(m.retailer_id))
-    .reduce((acc, m) => {
-      const key = m.month;
-      if (!acc[key]) acc[key] = { month: key, ga_cnt: 0, port_in: 0, count: 0 };
-      acc[key].ga_cnt += m.ga_cnt;
-      acc[key].port_in += m.port_in;
-      acc[key].count += 1;
-      return acc;
-    }, {} as Record<string, { month: string; ga_cnt: number; port_in: number; count: number }>);
+  // If yearlyZoneData is provided, use it for monthly aggregation as it's pre-calculated/complete
+  const aggregatedMonthly = useMemo(() => {
+    if (yearlyZoneData && yearlyZoneData.length > 0) {
+      return [...yearlyZoneData].sort((a, b) => a.month.localeCompare(b.month));
+    }
+    
+    // Fallback to manual aggregation if new table is not available
+    const branchMonthly = (branchMonthlyData || [])
+      .filter(m => !selectedZone || zoneRetailerIds.has(m.retailer_id))
+      .reduce((acc, m) => {
+        const key = m.month;
+        if (!acc[key]) acc[key] = { month: key, ga_cnt: 0, port_in: 0, count: 0 };
+        acc[key].ga_cnt += m.ga_cnt;
+        acc[key].port_in += m.port_in;
+        acc[key].count += 1;
+        return acc;
+      }, {} as Record<string, { month: string; ga_cnt: number; port_in: number; count: number }>);
 
-  const aggregatedMonthly = Object.values(branchMonthly).sort((a, b) => a.month.localeCompare(b.month));
+    return Object.values(branchMonthly).sort((a, b) => a.month.localeCompare(b.month));
+  }, [yearlyZoneData, branchMonthlyData, selectedZone, zoneRetailerIds]);
+
   const moMData = aggregatedMonthly.map((m, idx, arr) => ({
     month: m.month,
     ga_cnt: m.ga_cnt,
@@ -97,18 +108,34 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
     port_in_mom: idx === 0 ? 0 : m.port_in - arr[idx - 1].port_in,
   }));
 
-  const totalGa = aggregatedMonthly.length > 0 ? aggregatedMonthly.reduce((sum, m) => sum + m.ga_cnt, 0) : 0;
-  const totalMonthlyPortIn = aggregatedMonthly.length > 0 ? aggregatedMonthly.reduce((sum, m) => sum + m.port_in, 0) : 0;
+  // Summary statistics - Prefer yearlyZoneData for more complete branch/zone level aggregates
+  const hasAggregatedData = yearlyZoneData && yearlyZoneData.length > 0;
+  
+  const totalGA = hasAggregatedData 
+    ? yearlyZoneData.reduce((sum, r) => sum + (r.ga_cnt || 0), 0)
+    : retailers.reduce((sum, r) => sum + r.ga_cnt, 0);
 
-  // Summary statistics - use only active retailers for performance overview (unless viewing shop closed zone)
-  const activeOnlyRetailers = !selectedZone ? retailers : retailers.filter(r => !r.zone.toLowerCase().includes('shop closed'));
-  const displayedRetailers = activeOnlyRetailers.length;
-  const totalGA = activeOnlyRetailers.reduce((sum, r) => sum + r.ga_cnt, 0);
-  const totalIncentive = activeOnlyRetailers.reduce((sum, r) => sum + r.incentive, 0);
-  const totalPortIn = activeOnlyRetailers.reduce((sum, r) => sum + r.port_in, 0);
-  const totalDeductions = activeOnlyRetailers.reduce((sum, r) => sum + r.total_deductions, 0);
-  const avgRenewalRate = activeOnlyRetailers.length > 0 ? activeOnlyRetailers.reduce((sum, r) => sum + r.renewal_rate, 0) / activeOnlyRetailers.length : 0;
-  const activeRetailers = activeOnlyRetailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
+  const totalIncentive = hasAggregatedData 
+    ? yearlyZoneData.reduce((sum, r) => sum + (r.incentive || 0), 0)
+    : retailers.reduce((sum, r) => sum + r.incentive, 0);
+
+  const totalPortIn = hasAggregatedData 
+    ? yearlyZoneData.reduce((sum, r) => sum + (r.port_in || 0), 0)
+    : retailers.reduce((sum, r) => sum + r.port_in, 0);
+
+  const totalDeductions = hasAggregatedData 
+    ? yearlyZoneData.reduce((sum, r) => sum + (r.total_deductions || 0), 0)
+    : retailers.reduce((sum, r) => sum + r.total_deductions, 0);
+
+  const avgRenewalRate = hasAggregatedData
+    ? (yearlyZoneData.reduce((sum, r) => sum + (r.renewal_rate || 0), 0) / yearlyZoneData.length)
+    : (retailers.length > 0 ? retailers.reduce((sum, r) => sum + r.renewal_rate, 0) / retailers.length : 0);
+
+  const activeRetailersCount = retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
+  const displayedRetailersCount = retailers.length;
+
+  const totalGaMonthlyAvg = aggregatedMonthly.length > 0 ? totalGA / aggregatedMonthly.length : 0;
+  const totalPortInMonthlyAvg = aggregatedMonthly.length > 0 ? totalPortIn / aggregatedMonthly.length : 0;
 
   const COLORS = ['#006AE0', '#08DC7D', '#FFC8B2', '#FFD54F', '#00D7FF'];
 
@@ -169,7 +196,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           <div className="flex gap-4 text-sm flex-wrap">
             <div>
               <span className="text-gray-600">{selectedZone ? 'Zone' : 'Branch'} Retailers: </span>
-              <span className="font-semibold text-[#245bc1]">{displayedRetailers}</span>
+              <span className="font-semibold text-[#245bc1]">{displayedRetailersCount}</span>
             </div>
             <div>
               <span className="text-gray-600">Total GA: </span>
@@ -188,13 +215,13 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
             <div className="text-xs text-gray-600 grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
               {selectedZone ? (
                 <>
-                  <div>Avg GA: <span className="font-bold text-[#245bc1]">{aggregatedMonthly.length > 0 ? (totalGa / aggregatedMonthly.length).toFixed(0) : 0}</span></div>
-                  <div>Avg Port-In: <span className="font-bold text-[#06b6d4]">{aggregatedMonthly.length > 0 ? (totalMonthlyPortIn / aggregatedMonthly.length).toFixed(0) : 0}</span></div>
+                  <div>Avg GA: <span className="font-bold text-[#245bc1]">{totalGaMonthlyAvg.toFixed(0)}</span></div>
+                  <div>Avg Port-In: <span className="font-bold text-[#06b6d4]">{totalPortInMonthlyAvg.toFixed(0)}</span></div>
                 </>
               ) : (
                 <>
-                  <div>Total GA: <span className="font-bold text-[#245bc1]">{totalGa}</span></div>
-                  <div>Total Port-In: <span className="font-bold text-[#06b6d4]">{totalMonthlyPortIn}</span></div>
+                  <div>Total GA: <span className="font-bold text-[#245bc1]">{totalGA.toLocaleString('en-IE')}</span></div>
+                  <div>Total Port-In: <span className="font-bold text-[#06b6d4]">{totalPortIn.toLocaleString('en-IE')}</span></div>
                 </>
               )}
               <div>Latest GA: <span className="font-bold">{aggregatedMonthly[aggregatedMonthly.length -1].ga_cnt}</span></div>
@@ -212,7 +239,7 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           { label: 'Total Port-In', value: totalPortIn.toLocaleString('en-IE'), color: '#00D7FF' },
           { label: 'Avg Renewal Rate', value: `${avgRenewalRate.toFixed(1)}%`, color: '#FFD54F' },
           { label: 'Total Deductions', value: `€${totalDeductions.toLocaleString('en-IE', { maximumFractionDigits: 0 })}`, color: '#F04438' },
-          { label: 'Active Retailers', value: activeRetailers.toString(), color: '#08DC7D' },
+          { label: 'Active Retailers', value: activeRetailersCount.toString(), color: '#08DC7D' },
         ].map((kpi, i) => (
           <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: kpi.color }} />
