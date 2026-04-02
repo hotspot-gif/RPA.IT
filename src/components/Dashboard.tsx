@@ -359,9 +359,12 @@ export default function Dashboard() {
         {/* Logo */}
         <div className="p-4 border-b border-white/10 flex items-center justify-center gap-3">
           <img
-            src="https://cms-assets.ldsvcplatform.com/IT/s3fs-public/2023-09/MicrosoftTeams-image%20%2813%29.png"
+            src={sidebarCollapsed && !mobileMenuOpen 
+              ? "https://cms-assets.ldsvcplatform.com/IT/s3fs-public/2023-09/MicrosoftTeams-image%20%2813%29.png"
+              : "https://cms-assets.ldsvcplatform.com/IT/s3fs-public/inline-images/logo_new1.png"
+            }
             alt="Logo"
-            className={`flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'md:h-8 md:w-8 h-10 w-10' : 'h-10 w-10'}`}
+            className={`flex-shrink-0 transition-all duration-300 ${sidebarCollapsed && !mobileMenuOpen ? 'md:h-8 md:w-8' : 'h-10 w-auto max-w-full'}`}
           />
           {(!sidebarCollapsed || mobileMenuOpen) && <span className="font-bold text-sm leading-tight">Retailer<br/>Analytics</span>}
         </div>
