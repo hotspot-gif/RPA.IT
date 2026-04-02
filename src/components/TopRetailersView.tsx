@@ -147,22 +147,30 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const activeRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
       // Find the latest month in the aggregated data
-      const latestMonth = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month))[0].month;
-      // Sum the retailer_count for all zones in that month
-      return yearlyZoneData
-        .filter(r => r.month === latestMonth)
-        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'count']), 0);
+      const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
+      if (sortedData.length === 0) return 0;
+      
+      const latestMonth = sortedData[sortedData.length - 1].month;
+      // Sum the retailer_count for all zones in that month, excluding shop closed
+      const count = yearlyZoneData
+        .filter(r => r.month === latestMonth && !String(r.zone || '').toLowerCase().includes('shop closed'))
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'count', 'active_count', 'retailers']), 0);
+      
+      return count;
     }
     return retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);
 
   const displayedRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
-       // Similar to active count, get total from latest month
-       const latestMonth = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month))[0].month;
+       // Total retailers in the latest month (including closed if any)
+       const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
+       if (sortedData.length === 0) return 0;
+       
+       const latestMonth = sortedData[sortedData.length - 1].month;
        return yearlyZoneData
         .filter(r => r.month === latestMonth)
-        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers']), 0);
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers', 'count', 'retailers']), 0);
     }
     return retailers.length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);
