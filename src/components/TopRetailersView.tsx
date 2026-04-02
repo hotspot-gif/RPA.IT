@@ -108,29 +108,30 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
     port_in_mom: idx === 0 ? 0 : m.port_in - arr[idx - 1].port_in,
   }));
 
-  // Summary statistics - Prefer yearlyZoneData for more complete branch/zone level aggregates
+  // Summary statistics - Prefer monthly_zone_sum for more complete branch/zone level aggregates
   const hasAggregatedData = yearlyZoneData && yearlyZoneData.length > 0;
   
   const totalGA = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (r.ga_cnt || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.ga_cnt) || 0), 0)
     : retailers.reduce((sum, r) => sum + r.ga_cnt, 0);
 
   const totalIncentive = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (r.incentive || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.incentive) || 0), 0)
     : retailers.reduce((sum, r) => sum + r.incentive, 0);
 
   const totalPortIn = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (r.port_in || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.port_in) || 0), 0)
     : retailers.reduce((sum, r) => sum + r.port_in, 0);
 
   const totalDeductions = hasAggregatedData 
-    ? yearlyZoneData.reduce((sum, r) => sum + (r.total_deductions || 0), 0)
+    ? yearlyZoneData.reduce((sum, r) => sum + (Number(r.total_deductions) || 0), 0)
     : retailers.reduce((sum, r) => sum + r.total_deductions, 0);
 
   const avgRenewalRate = hasAggregatedData
-    ? (yearlyZoneData.reduce((sum, r) => sum + (r.renewal_rate || 0), 0) / yearlyZoneData.length)
+    ? (yearlyZoneData.reduce((sum, r) => sum + (Number(r.renewal_rate) || 0), 0) / yearlyZoneData.length)
     : (retailers.length > 0 ? retailers.reduce((sum, r) => sum + r.renewal_rate, 0) / retailers.length : 0);
 
+  // Active Retailers count should still come from the summary list as it represents current state
   const activeRetailersCount = retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
   const displayedRetailersCount = retailers.length;
 
