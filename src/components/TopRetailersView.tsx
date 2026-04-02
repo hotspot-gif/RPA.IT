@@ -193,6 +193,49 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const totalGaMonthlyAvg = aggregatedMonthly.length > 0 ? totalGA / aggregatedMonthly.length : 0;
   const totalPortInMonthlyAvg = aggregatedMonthly.length > 0 ? totalPortIn / aggregatedMonthly.length : 0;
 
+  // Yearly Analysis
+  const yearlyAnalysis = useMemo(() => {
+    if (!hasAggregatedData) return [];
+    return years.map(yr => {
+      const yearRecords = yearlyZoneData.filter(r => r.month.startsWith(yr));
+      const monthCount = [...new Set(yearRecords.map(r => r.month))].length;
+      const ga = yearRecords.reduce((s, r) => s + val(r, ['ga_cnt', 'ga', 'total_ga']), 0);
+      const pi = yearRecords.reduce((s, r) => s + val(r, ['port_in', 'total_port_in', 'pi']), 0);
+      const inc = yearRecords.reduce((s, r) => s + val(r, ['incentive', 'total_incentive', 'inc']), 0);
+      
+      return {
+        year: yr,
+        monthCount,
+        ga,
+        pi,
+        inc,
+        avgGa: monthCount > 0 ? ga / monthCount : 0,
+        avgPi: monthCount > 0 ? pi / monthCount : 0,
+        avgInc: monthCount > 0 ? inc / monthCount : 0
+      };
+    }).reverse(); // Latest year first
+  }, [years, yearlyZoneData, hasAggregatedData]);
+
+  // Latest Month Metrics
+  const latestMetrics = useMemo(() => {
+    if (aggregatedMonthly.length === 0) return { month: 'N/A', ga: 0, pi: 0, inc: 0 };
+    const latest = aggregatedMonthly[aggregatedMonthly.length - 1];
+    
+    // For incentive, we need to sum from yearlyZoneData for the specific month
+    const monthInc = hasAggregatedData 
+      ? yearlyZoneData
+          .filter(r => r.month === latest.month)
+          .reduce((s, r) => s + val(r, ['incentive', 'total_incentive', 'inc']), 0)
+      : 0;
+
+    return {
+      month: latest.month,
+      ga: latest.ga_cnt,
+      pi: latest.port_in,
+      inc: monthInc
+    };
+  }, [aggregatedMonthly, yearlyZoneData, hasAggregatedData]);
+
   // Calculate active months count for average per month
   const activeMonthsCount = useMemo(() => {
     if (hasAggregatedData) {
@@ -296,23 +339,78 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
           </div>
         </div>
 
-        {aggregatedMonthly.length > 0 && (
-          <div className="mt-4 bg-white p-3 rounded-lg border border-gray-200">
-            <p className="text-sm font-semibold text-[#21264E]">{selectedZone ? 'Zone' : 'Branch'} Monthly GA & Port-In Trends (aggregated)</p>
-            <div className="text-xs text-gray-600 grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-              {selectedZone ? (
-                <>
-                  <div>Avg GA: <span className="font-bold text-[#245bc1]">{totalGaMonthlyAvg.toFixed(0)}</span></div>
-                  <div>Avg Port-In: <span className="font-bold text-[#06b6d4]">{totalPortInMonthlyAvg.toFixed(0)}</span></div>
-                </>
-              ) : (
-                <>
-                  <div>Total GA: <span className="font-bold text-[#245bc1]">{totalGA.toLocaleString('en-IE')}</span></div>
-                  <div>Total Port-In: <span className="font-bold text-[#06b6d4]">{totalPortIn.toLocaleString('en-IE')}</span></div>
-                </>
-              )}
-              <div>Latest GA: <span className="font-bold">{aggregatedMonthly[aggregatedMonthly.length -1].ga_cnt}</span></div>
-              <div>Latest Port-In: <span className="font-bold">{aggregatedMonthly[aggregatedMonthly.length -1].port_in}</span></div>
+        {yearlyAnalysis.length > 0 && (
+          <div className="mt-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar size={18} className="text-[#245bc1]" />
+              <p className="text-sm font-bold text-[#21264E]">Yearly Summary Analysis</p>
+            </div>
+            <div className="space-y-4">
+              {yearlyAnalysis.map(ya => (
+                <div key={ya.year} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 p-3 bg-[#fff7f2] rounded-lg border border-[#245bc1]/10">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{ya.year} Totals</span>
+                    <span className="text-sm font-bold text-[#21264E]">{ya.monthCount} Months</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">GA</span>
+                    <span className="text-sm font-bold text-[#245bc1]">{ya.ga.toLocaleString('en-IE')}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Port-In</span>
+                    <span className="text-sm font-bold text-[#06b6d4]">{ya.pi.toLocaleString('en-IE')}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Incentive</span>
+                    <span className="text-sm font-bold text-[#08DC7D]">€{ya.inc.toLocaleString('en-IE', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex flex-col border-l border-gray-200 pl-4">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Avg GA/mo</span>
+                    <span className="text-sm font-bold text-[#245bc1]">{ya.avgGa.toFixed(0)}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Avg PI/mo</span>
+                    <span className="text-sm font-bold text-[#06b6d4]">{ya.avgPi.toFixed(0)}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-medium">Avg Inc/mo</span>
+                    <span className="text-sm font-bold text-[#08DC7D]">€{ya.avgInc.toLocaleString('en-IE', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Latest Metrics Row */}
+        {latestMetrics.month !== 'N/A' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Latest GA ({latestMetrics.month})</p>
+                <p className="text-2xl font-black text-[#245bc1]">{latestMetrics.ga.toLocaleString('en-IE')}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-[#245bc1]/10 flex items-center justify-center text-[#245bc1]">
+                <TrendingUp size={20} />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Latest Port-In ({latestMetrics.month})</p>
+                <p className="text-2xl font-black text-[#06b6d4]">{latestMetrics.pi.toLocaleString('en-IE')}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-[#06b6d4]/10 flex items-center justify-center text-[#06b6d4]">
+                <PhoneForwarded size={20} />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Latest Incentive ({latestMetrics.month})</p>
+                <p className="text-2xl font-black text-[#08DC7D]">€{latestMetrics.inc.toLocaleString('en-IE', { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-[#08DC7D]/10 flex items-center justify-center text-[#08DC7D]">
+                <DollarSign size={20} />
+              </div>
             </div>
           </div>
         )}
