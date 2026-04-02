@@ -147,16 +147,17 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const activeRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
       // Find the latest month in the aggregated data
-      const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
-      if (sortedData.length === 0) return 0;
+      // First, ensure we have a valid list of months
+      const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => b.localeCompare(a));
       
-      // Since it's sorted descending (latest first), index 0 is the latest month
-      const latestMonth = sortedData[0].month;
+      if (availableMonths.length === 0) return 0;
       
-      // Sum the retailer_count for all zones in that month, excluding shop closed
+      const latestMonth = availableMonths[0];
+      
+      // Sum the retailer count for all rows in that specific latest month, excluding shop closed
       const count = yearlyZoneData
         .filter(r => r.month === latestMonth && !String(r.zone || '').toLowerCase().includes('shop closed'))
-        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'count', 'active_count', 'retailers']), 0);
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'count', 'active_count', 'retailers', 'retailer_cnt', 'total_active']), 0);
       
       return count;
     }
@@ -165,14 +166,14 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
 
   const displayedRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
-       // Total retailers in the latest month
-       const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
-       if (sortedData.length === 0) return 0;
+       // Total retailers in the latest month (including all zones)
+       const availableMonths = [...new Set(yearlyZoneData.map(r => r.month))].sort((a, b) => b.localeCompare(a));
+       if (availableMonths.length === 0) return 0;
        
-       const latestMonth = sortedData[0].month;
+       const latestMonth = availableMonths[0];
        return yearlyZoneData
         .filter(r => r.month === latestMonth)
-        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers', 'count', 'retailers']), 0);
+        .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers', 'count', 'retailers', 'retailer_cnt']), 0);
     }
     return retailers.length;
   }, [hasAggregatedData, yearlyZoneData, retailers]);
