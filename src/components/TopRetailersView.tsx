@@ -131,9 +131,29 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
     ? (yearlyZoneData.reduce((sum, r) => sum + (Number(r.renewal_rate) || 0), 0) / yearlyZoneData.length)
     : (retailers.length > 0 ? retailers.reduce((sum, r) => sum + r.renewal_rate, 0) / retailers.length : 0);
 
-  // Active Retailers count should still come from the summary list as it represents current state
-  const activeRetailersCount = retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
-  const displayedRetailersCount = retailers.length;
+  // Active Retailers count should come from the latest month's aggregated data
+  const activeRetailersCount = useMemo(() => {
+    if (hasAggregatedData) {
+      // Find the latest month in the aggregated data
+      const latestMonth = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month))[0].month;
+      // Sum the retailer_count for all zones in that month
+      return yearlyZoneData
+        .filter(r => r.month === latestMonth)
+        .reduce((sum, r) => sum + (Number(r.retailer_count) || 0), 0);
+    }
+    return retailers.filter(r => !r.zone.toLowerCase().includes('shop closed')).length;
+  }, [hasAggregatedData, yearlyZoneData, retailers]);
+
+  const displayedRetailersCount = useMemo(() => {
+    if (hasAggregatedData) {
+       // Similar to active count, get total from latest month
+       const latestMonth = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month))[0].month;
+       return yearlyZoneData
+        .filter(r => r.month === latestMonth)
+        .reduce((sum, r) => sum + (Number(r.retailer_count) || 0), 0);
+    }
+    return retailers.length;
+  }, [hasAggregatedData, yearlyZoneData, retailers]);
 
   const totalGaMonthlyAvg = aggregatedMonthly.length > 0 ? totalGA / aggregatedMonthly.length : 0;
   const totalPortInMonthlyAvg = aggregatedMonthly.length > 0 ? totalPortIn / aggregatedMonthly.length : 0;

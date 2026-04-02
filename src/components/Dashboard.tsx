@@ -281,7 +281,7 @@ export default function Dashboard() {
     // Fetch from new aggregated table (more reliable for sums/averages)
     const aggregatedQuery = supabase.from('monthly_zone_sum').select('*').eq('branch', selectedBranch);
     if (selectedZone) aggregatedQuery.eq('zone', selectedZone);
-    aggregatedQuery.order('month').then(({ data, error }: { data: any; error: any }) => {
+    aggregatedQuery.order('month').limit(5000).then(({ data, error }: { data: any; error: any }) => {
       if (!error && data) {
         setYearlyZoneData(data);
       }
