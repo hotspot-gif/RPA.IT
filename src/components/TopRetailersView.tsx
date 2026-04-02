@@ -150,7 +150,9 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
       const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
       if (sortedData.length === 0) return 0;
       
-      const latestMonth = sortedData[sortedData.length - 1].month;
+      // Since it's sorted descending (latest first), index 0 is the latest month
+      const latestMonth = sortedData[0].month;
+      
       // Sum the retailer_count for all zones in that month, excluding shop closed
       const count = yearlyZoneData
         .filter(r => r.month === latestMonth && !String(r.zone || '').toLowerCase().includes('shop closed'))
@@ -163,11 +165,11 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
 
   const displayedRetailersCount = useMemo(() => {
     if (hasAggregatedData) {
-       // Total retailers in the latest month (including closed if any)
+       // Total retailers in the latest month
        const sortedData = [...yearlyZoneData].sort((a, b) => b.month.localeCompare(a.month));
        if (sortedData.length === 0) return 0;
        
-       const latestMonth = sortedData[sortedData.length - 1].month;
+       const latestMonth = sortedData[0].month;
        return yearlyZoneData
         .filter(r => r.month === latestMonth)
         .reduce((sum, r) => sum + val(r, ['retailer_count', 'active_retailers', 'total_retailers', 'count', 'retailers']), 0);
