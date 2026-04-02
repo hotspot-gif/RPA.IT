@@ -271,13 +271,6 @@ export default function Dashboard() {
       return; 
     }
 
-    // Fetch from original table (limited rows)
-    const query = supabase.from('retailer_monthly').select('*').eq('branch', selectedBranch);
-    if (selectedZone) query.eq('zone', selectedZone);
-    query.order('month').limit(100000).then(({ data, error }: { data: any; error: any }) => {
-      if (!error && data) setBranchMonthlyData(data as RetailerMonthly[]);
-    });
-
     // Fetch from new aggregated table (more reliable for sums/averages)
     // Try both with and without LMIT-HS- prefix to handle potential naming inconsistencies
     const branchShort = selectedBranch.replace('LMIT-HS-', '');
@@ -291,8 +284,17 @@ export default function Dashboard() {
     aggregatedQuery.order('month').limit(5000).then(({ data, error }: { data: any; error: any }) => {
       if (!error && data && data.length > 0) {
         setYearlyZoneData(data);
-      } else if (error) {
-        console.error('Error fetching monthly_zone_sum:', error);
+        // Also set branchMonthlyData to an empty array or a minimal set to avoid TopRetailersView falling back to it
+        setBranchMonthlyData([]);
+      } else {
+        if (error) console.error('Error fetching monthly_zone_sum:', error);
+        
+        // Fallback: only if monthly_zone_sum is empty, fetch from original table (limited rows)
+        const query = supabase.from('retailer_monthly').select('*').eq('branch', selectedBranch);
+        if (selectedZone) query.eq('zone', selectedZone);
+        query.order('month').limit(100000).then(({ data: fallbackData, error: fallbackError }) => {
+          if (!fallbackError && fallbackData) setBranchMonthlyData(fallbackData as RetailerMonthly[]);
+        });
       }
     });
   }, [selectedBranch, selectedZone]);
