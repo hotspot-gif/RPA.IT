@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { RetailerSummary, RetailerMonthly } from '@/types';
-import { TrendingUp, DollarSign, PhoneForwarded, Activity } from 'lucide-react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { TrendingUp, DollarSign, PhoneForwarded, Activity, Calendar } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const YEAR_COLORS: Record<string, string> = {
+  '2024': '#245bc1',
+  '2025': '#08DC7D',
+  '2026': '#FFD54F',
+  '2023': '#F04438'
+};
 
 interface TopRetailersViewProps {
   retailers: RetailerSummary[];
@@ -185,6 +193,37 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
   const totalGaMonthlyAvg = aggregatedMonthly.length > 0 ? totalGA / aggregatedMonthly.length : 0;
   const totalPortInMonthlyAvg = aggregatedMonthly.length > 0 ? totalPortIn / aggregatedMonthly.length : 0;
 
+  // Calculate active months count for average per month
+  const activeMonthsCount = useMemo(() => {
+    if (hasAggregatedData) {
+      return [...new Set(yearlyZoneData.map(r => r.month))].length;
+    }
+    return aggregatedMonthly.length;
+  }, [hasAggregatedData, yearlyZoneData, aggregatedMonthly]);
+
+  // Year overlay data transformation
+  const years = useMemo(() => {
+    if (!hasAggregatedData) return [];
+    return [...new Set(yearlyZoneData.map(r => r.month.split('-')[0]))].sort();
+  }, [hasAggregatedData, yearlyZoneData]);
+
+  const overlayData = useMemo(() => {
+    if (!hasAggregatedData) return [];
+    return MONTH_NAMES.map((name, idx) => {
+      const monthNum = String(idx + 1).padStart(2, '0');
+      const point: any = { month: name };
+      years.forEach(yr => {
+        // Find all records for this year and month (across all zones)
+        const records = yearlyZoneData.filter(r => r.month === `${yr}-${monthNum}`);
+        if (records.length > 0) {
+          point[`ga_${yr}`] = records.reduce((s, r) => s + val(r, ['ga_cnt', 'ga', 'total_ga']), 0);
+          point[`port_in_${yr}`] = records.reduce((s, r) => s + val(r, ['port_in', 'total_port_in', 'pi']), 0);
+        }
+      });
+      return point;
+    });
+  }, [years, yearlyZoneData, hasAggregatedData]);
+
   const COLORS = ['#006AE0', '#08DC7D', '#FFC8B2', '#FFD54F', '#00D7FF'];
 
   const StatCard = ({ 
@@ -282,17 +321,22 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
       {/* Main KPI Tiles */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {[
-          { label: 'Total Incentive', value: `€${totalIncentive.toLocaleString('en-IE', { maximumFractionDigits: 0 })}`, color: '#006AE0' },
-          { label: 'Total GA Activations', value: totalGA.toLocaleString('en-IE'), color: '#08DC7D' },
-          { label: 'Total Port-In', value: totalPortIn.toLocaleString('en-IE'), color: '#00D7FF' },
+          { label: 'Total Incentive', value: `€${totalIncentive.toLocaleString('en-IE', { maximumFractionDigits: 0 })}`, color: '#006AE0', avg: `€${(totalIncentive / activeMonthsCount).toLocaleString('en-IE', { maximumFractionDigits: 0 })}/mo` },
+          { label: 'Total GA Activations', value: totalGA.toLocaleString('en-IE'), color: '#08DC7D', avg: `${(totalGA / activeMonthsCount).toFixed(0)}/mo` },
+          { label: 'Total Port-In', value: totalPortIn.toLocaleString('en-IE'), color: '#00D7FF', avg: `${(totalPortIn / activeMonthsCount).toFixed(0)}/mo` },
           { label: 'Avg Renewal Rate', value: `${avgRenewalRate.toFixed(1)}%`, color: '#FFD54F' },
-          { label: 'Total Deductions', value: `€${totalDeductions.toLocaleString('en-IE', { maximumFractionDigits: 0 })}`, color: '#F04438' },
+          { label: 'Total Deductions', value: `€${totalDeductions.toLocaleString('en-IE', { maximumFractionDigits: 0 })}`, color: '#F04438', avg: `€${(totalDeductions / activeMonthsCount).toLocaleString('en-IE', { maximumFractionDigits: 0 })}/mo` },
           { label: 'Active Retailers', value: activeRetailersCount.toString(), color: '#08DC7D' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden">
+          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: kpi.color }} />
-            <p className="text-xs text-gray-500 mb-1 pl-2">{kpi.label}</p>
-            <p className="text-lg font-bold pl-2" style={{ color: kpi.color === '#F04438' ? '#F04438' : '#21264E' }}>{kpi.value}</p>
+            <div>
+              <p className="text-[10px] text-gray-500 mb-1 pl-2 font-medium uppercase tracking-wider">{kpi.label}</p>
+              <p className="text-lg font-bold pl-2 truncate" style={{ color: '#21264E' }}>{kpi.value}</p>
+            </div>
+            {kpi.avg && (
+              <p className="text-[9px] text-gray-400 pl-2 mt-2 font-medium">Avg: {kpi.avg}</p>
+            )}
           </div>
         ))}
       </div>
@@ -398,35 +442,57 @@ export default function TopRetailersView({ retailers, branch, loading, branchMon
         </div>
       </div>
 
-      {moMData.length > 0 && (
+      {overlayData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={18} className="text-[#245bc1]" />
-              <h3 className="font-semibold text-[#21264E]">Month-on-Month GA Trend</h3>
+              <h3 className="font-semibold text-[#21264E]">GA Trend - Year Overlay</h3>
             </div>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={moMData}>
+              <LineChart data={overlayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" fontSize={12} />
                 <YAxis fontSize={12} />
                 <Tooltip formatter={(value) => value.toLocaleString('en-IE')} />
-                <Line type="monotone" dataKey="ga_cnt" stroke="#245bc1" strokeWidth={2} dot={{ fill: '#245bc1', r: 4 }} />
+                <Legend />
+                {years.map(yr => (
+                  <Line 
+                    key={`ga_${yr}`} 
+                    type="monotone" 
+                    dataKey={`ga_${yr}`} 
+                    name={`GA ${yr}`} 
+                    stroke={YEAR_COLORS[yr] || '#245bc1'} 
+                    strokeWidth={2} 
+                    dot={{ fill: YEAR_COLORS[yr] || '#245bc1', r: 4 }} 
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center gap-2 mb-4">
               <PhoneForwarded size={18} className="text-[#06b6d4]" />
-              <h3 className="font-semibold text-[#21264E]">Month-on-Month Port-In Trend</h3>
+              <h3 className="font-semibold text-[#21264E]">Port-In Trend - Year Overlay</h3>
             </div>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={moMData}>
+              <LineChart data={overlayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" fontSize={12} />
                 <YAxis fontSize={12} />
                 <Tooltip formatter={(value) => value.toLocaleString('en-IE')} />
-                <Line type="monotone" dataKey="port_in" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4', r: 4 }} />
+                <Legend />
+                {years.map(yr => (
+                  <Line 
+                    key={`pi_${yr}`} 
+                    type="monotone" 
+                    dataKey={`port_in_${yr}`} 
+                    name={`Port-In ${yr}`} 
+                    stroke={YEAR_COLORS[yr] || '#06b6d4'} 
+                    strokeWidth={2} 
+                    dot={{ fill: YEAR_COLORS[yr] || '#06b6d4', r: 4 }} 
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
